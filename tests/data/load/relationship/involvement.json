@@ -1,0 +1,16 @@
+{
+  "involvment": [
+    {
+      "source_entity": "DNA-PKcs",
+      "target_entity": "NHEJ",
+      "relation": "Involvement",
+      "relationship_description": "DNA-PKcs is a key enzyme in the NHEJ pathway, and its inhibition is used to promote HDR in gene editing."
+    },
+    {
+      "source_entity": "PolQ",
+      "target_entity": "Q-mediated end joining",
+      "relation": "Involvement",
+      "relationship_description": "PolQ is involved in Q-mediated end joining, an alternative DNA repair pathway. Inhibition of PolQ is used to further enhance HDR by reducing competing repair pathways."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+# Pinned to the same versions the rest of the stack already runs (ingestion/,
+# agents/eugene-ade/) so one image build cannot drift a shared library out from
+# under another service.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+PyYAML==6.0.2
+requests==2.32.3
+boto3==1.35.92
+apscheduler==3.11.0
+python-json-logger==2.0.7
+
+# Tests only. Kept here rather than in a second file because the image is also
+# what CI runs the suite in — a separate requirements-dev.txt would mean the
+# tested environment and the shipped environment are not the same environment.
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1
+moto[s3]==5.0.28
+pytest-cov==6.0.0
+python-json-logger==2.0.7

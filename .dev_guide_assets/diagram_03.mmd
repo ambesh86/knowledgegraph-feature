@@ -1,0 +1,48 @@
+flowchart TB
+    subgraph "Data Sources"
+        PDF["PDF Documents"]
+        USPTO["USPTO Patents"]
+        PM["PubMed Articles"]
+        CT["ClinicalTrials.gov"]
+        CENTREE["Centree Projects"]
+        ORGS["Organization Names"]
+        DRUGS["DrugBank Data"]
+    end
+
+    subgraph "Step 1: Download & Parse"
+        DL_PAT["download_patents.py"]
+        DL_PM["download_pubmed.py"]
+        DL_CT["download_clinicaltrail.py"]
+        ANALYZE["analyze.py<br><i>LLM extracts entities<br>& relationships from PDFs</i>"]
+        ANALYZE_ORG["analyze_organizations.py<br><i>LLM resolves org names</i>"]
+    end
+
+    subgraph "Step 2: Transform"
+        CONV["convert_patents.py<br><i>JSON → Text</i>"]
+        TRIPLES["Extraction object<br><i>set[Entity] + set[Relationship]</i>"]
+        EXPAND["NodeExpansionProvider<br><i>Adds type nodes</i>"]
+    end
+
+    subgraph "Step 3: Load into Neo4j"
+        STORE["store_triples.py"]
+        INGEST_ORG["ingest_organizations.py"]
+        INGEST_DRUG["ingest_drug_aliases.py"]
+        LINK_PM["link_pubmed_articles.py"]
+    end
+
+    subgraph "Neo4j"
+        DB[("Knowledge Graph<br>Nodes + Relationships")]
+    end
+
+    PDF --> ANALYZE --> TRIPLES
+    USPTO --> DL_PAT --> CONV --> TRIPLES
+    PM --> DL_PM --> LINK_PM
+    CT --> DL_CT --> DB
+    CENTREE --> DB
+    ORGS --> ANALYZE_ORG --> INGEST_ORG
+    DRUGS --> INGEST_DRUG
+
+    TRIPLES --> EXPAND --> STORE --> DB
+    LINK_PM --> DB
+    INGEST_ORG --> DB
+    INGEST_DRUG --> DB

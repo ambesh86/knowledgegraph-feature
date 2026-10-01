@@ -1,0 +1,12 @@
+[
+  {
+    "entity_name": "NHEJ",
+    "entity_type": "Biological Process",
+    "entity_description": "Non-Homologous End Joining (NHEJ) is a pathway that repairs double-strand breaks in DNA. It is typically error-prone and competes with HDR for repair of DNA breaks."
+  },
+  {
+    "entity_name": "HDR",
+    "entity_type": "Biological Process",
+    "entity_description": "Homologous Directed Repair (HDR) is a precise DNA repair mechanism that uses a homologous sequence as a template to repair double-strand breaks. It is often targeted in gene editing to achieve accurate genetic modifications."
+  }
+]

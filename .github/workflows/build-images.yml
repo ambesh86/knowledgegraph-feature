@@ -1,0 +1,175 @@
+# =============================================================================
+# Eugene — build & publish Docker images for every service
+# =============================================================================
+# Builds 5 service images in parallel and pushes them to GitHub Container
+# Registry (ghcr.io). Free for private repos; authenticates with the built-in
+# GITHUB_TOKEN — no extra secrets to configure.
+#
+# Images produced (replace OWNER with your GitHub org/user, lower-case):
+#   ghcr.io/OWNER/eugene-ws            : core API
+#   ghcr.io/OWNER/eugene-mcp           : MCP server
+#   ghcr.io/OWNER/eugene-agent-ws      : agent API (Strands + FastAPI)
+#   ghcr.io/OWNER/eugene-agent-ui      : Streamlit chat UI
+#   ghcr.io/OWNER/eugene-agent-ui-next : Next.js chat UI
+#
+# Tag scheme on every image:
+#   - latest                 (only when building from main)
+#   - <branch-name>          (one tag per branch)
+#   - sha-<short-sha>        (always — immutable handle)
+#   - v<semver>              (when you push a git tag like v1.2.3)
+#
+# Triggers:
+#   - push to main           → rebuild and tag :latest + :sha-XXXXX
+#   - push of a git tag v*   → rebuild and tag the semver
+#   - manual via the Actions tab (workflow_dispatch)
+#   - pull request           → builds only (no push) for verification
+#
+# AFTER FIRST SUCCESSFUL RUN:
+#   1. Go to your GitHub profile → Packages. Each image will appear.
+#   2. By default ghcr packages are private — fine for production.
+#   3. To pull from EC2:
+#         echo <PAT-with-read:packages> | docker login ghcr.io -u <user> --password-stdin
+#         docker pull ghcr.io/aisemanticexpert/eugene-agent-ws:latest
+# =============================================================================
+
+name: build-images
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:        # lets you click "Run workflow" in the Actions tab
+
+permissions:
+  contents: read            # checkout
+  packages: write           # push to ghcr.io
+
+concurrency:
+  group: build-images-${{ github.ref }}
+  cancel-in-progress: true  # if you push twice, the in-flight run is cancelled
+
+env:
+  REGISTRY: ghcr.io
+  # Image name is derived per-matrix-entry below.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false      # don't kill the other 4 builds if one fails
+      matrix:
+        include:
+          - service: eugene-ws
+            dockerfile: docker/eugene_ws/Dockerfile
+          - service: eugene-mcp
+            dockerfile: docker/eugene_mcp/Dockerfile
+          - service: eugene-agent-ws
+            dockerfile: docker/eugene_agent_ws/Dockerfile
+          - service: eugene-agent-ui
+            dockerfile: docker/eugene_agent_ui/Dockerfile
+          - service: eugene-agent-ui-next
+            dockerfile: docker/eugene_agent_ui_next/Dockerfile
+
+    steps:
+      # ----------------------------------------------------------------------
+      # 1. Source
+      # ----------------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------------------
+      # 2. Build tooling — Buildx enables multi-platform + better caching
+      # ----------------------------------------------------------------------
+      - name: Set up QEMU (for arm64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ----------------------------------------------------------------------
+      # 3. Authenticate to GHCR (uses the workflow's own token — no PAT needed)
+      # ----------------------------------------------------------------------
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------------------------------------
+      # 4. Compute tags + OCI labels
+      #    docker/metadata-action turns git refs into a tidy tag list.
+      # ----------------------------------------------------------------------
+      - name: Compute image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # GitHub repo owners are case-sensitive but image names must be lower-case.
+          # `github.repository_owner` is already correct; we just lower-case defensively.
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.service }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+
+      # ----------------------------------------------------------------------
+      # 5. Build (and push, unless this is a PR)
+      #    Caches layers to GitHub Actions cache so subsequent builds are fast.
+      # ----------------------------------------------------------------------
+      - name: Build & push ${{ matrix.service }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Only amd64 for now (matches t3.* EC2). Uncomment to add arm64 for
+          # Graviton or Apple Silicon — adds ~2x build time.
+          platforms: linux/amd64
+          # platforms: linux/amd64,linux/arm64
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          provenance: false   # smaller manifest, fewer GHCR oddities
+
+      # ----------------------------------------------------------------------
+      # 6. Print a short summary into the job's Summary tab
+      # ----------------------------------------------------------------------
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### ${{ matrix.service }}"
+            echo ""
+            echo "**Tags pushed:**"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # =============================================================================
+  # Aggregate job — succeeds only if every matrix entry succeeded. Useful as a
+  # required status check on the main branch protection rule.
+  # =============================================================================
+  build-all:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check matrix outcome
+        run: |
+          if [[ "${{ needs.build.result }}" != "success" ]]; then
+            echo "one or more image builds failed"; exit 1
+          fi
+          echo "all 5 images built successfully"

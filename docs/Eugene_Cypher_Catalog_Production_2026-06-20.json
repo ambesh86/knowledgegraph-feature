@@ -1,0 +1,1980 @@
+{
+  "date": "2026-06-20",
+  "env": {
+    "neo4j": "5.26.9 (community)",
+    "apoc": "5.26.9",
+    "gds": "2.13.5",
+    "nodes": "129375",
+    "rels": "4050064",
+    "nq": 68
+  },
+  "sections": [
+    {
+      "title": "1. Schema & Metadata",
+      "intro": "Introspect the live graph model: labels, relationship types, property keys, counts and the APOC meta-graph.",
+      "entries": [
+        {
+          "desc": "Total node count in the graph",
+          "cypher": "MATCH (n) RETURN count(n) AS total_nodes",
+          "result": {
+            "columns": [
+              "total_nodes"
+            ],
+            "rows": [
+              [
+                "129375"
+              ]
+            ],
+            "ms": 55,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Total relationship count in the graph",
+          "cypher": "MATCH ()-[r]->() RETURN count(r) AS total_relationships",
+          "result": {
+            "columns": [
+              "total_relationships"
+            ],
+            "rows": [
+              [
+                "4050064"
+              ]
+            ],
+            "ms": 51,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "All node labels with per-label counts (descending)",
+          "cypher": "MATCH (n) UNWIND labels(n) AS label RETURN label, count(*) AS cnt ORDER BY cnt DESC",
+          "result": {
+            "columns": [
+              "label",
+              "cnt"
+            ],
+            "rows": [
+              [
+                "biological_process",
+                "28642"
+              ],
+              [
+                "gene_protein",
+                "27671"
+              ],
+              [
+                "disease",
+                "17080"
+              ],
+              [
+                "effect_phenotype",
+                "15311"
+              ],
+              [
+                "anatomy",
+                "14035"
+              ],
+              [
+                "molecular_function",
+                "11169"
+              ],
+              [
+                "drug",
+                "7957"
+              ],
+              [
+                "cellular_component",
+                "4176"
+              ],
+              [
+                "\u2026",
+                "\u2026"
+              ]
+            ],
+            "ms": 248,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "All relationship types with per-type counts (top 12)",
+          "cypher": "MATCH ()-[r]->() RETURN type(r) AS rel_type, count(*) AS cnt ORDER BY cnt DESC LIMIT 12",
+          "result": {
+            "columns": [
+              "rel_type",
+              "cnt"
+            ],
+            "rows": [
+              [
+                "anatomy_protein_present",
+                "1518203"
+              ],
+              [
+                "drug_drug",
+                "1336314"
+              ],
+              [
+                "protein_protein",
+                "321075"
+              ],
+              [
+                "disease_phenotype_positive",
+                "150317"
+              ],
+              [
+                "bioprocess_protein",
+                "144805"
+              ],
+              [
+                "cellcomp_protein",
+                "83402"
+              ],
+              [
+                "disease_protein",
+                "80411"
+              ],
+              [
+                "molfunc_protein",
+                "69530"
+              ],
+              [
+                "\u2026",
+                "\u2026"
+              ]
+            ],
+            "ms": 2867,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Distinct property keys present in the database",
+          "cypher": "CALL db.propertyKeys() YIELD propertyKey RETURN collect(propertyKey) AS property_keys",
+          "result": {
+            "columns": [
+              "property_keys"
+            ],
+            "rows": [
+              [
+                "[node_id, node_name, node_source, node_index, display_relation, embed\u2026"
+              ]
+            ],
+            "ms": 32,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Whole-database meta statistics via APOC",
+          "cypher": "CALL apoc.meta.stats() YIELD labelCount, relTypeCount, nodeCount, relCount RETURN labelCount, relTypeCount, nodeCount, relCount",
+          "result": {
+            "columns": [
+              "labelCount",
+              "relTypeCount",
+              "nodeCount",
+              "relCount"
+            ],
+            "rows": [
+              [
+                "10",
+                "30",
+                "129375",
+                "4050064"
+              ]
+            ],
+            "ms": 52,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Database components / versions (kernel, edition)",
+          "cypher": "CALL dbms.components() YIELD name, versions, edition RETURN name, versions, edition",
+          "result": {
+            "columns": [
+              "name",
+              "versions",
+              "edition"
+            ],
+            "rows": [
+              [
+                "Neo4j Kernel",
+                "[5.26.9]",
+                "community"
+              ]
+            ],
+            "ms": 29,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Installed APOC and GDS plugin versions",
+          "cypher": "RETURN apoc.version() AS apoc_version, gds.version() AS gds_version",
+          "result": {
+            "columns": [
+              "apoc_version",
+              "gds_version"
+            ],
+            "rows": [
+              [
+                "5.26.9",
+                "2.13.5"
+              ]
+            ],
+            "ms": 23,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "2. Retrieval & Filtering",
+      "intro": "Core read patterns: lookup by name, label scans, WHERE predicates, string matching, DISTINCT, ORDER / SKIP / LIMIT.",
+      "entries": [
+        {
+          "desc": "Find a gene/protein node by exact name",
+          "cypher": "MATCH (n:gene_protein {node_name: $name}) RETURN n.node_name, n.node_id, n.node_source",
+          "result": {
+            "columns": [
+              "n.node_name",
+              "n.node_id",
+              "n.node_source"
+            ],
+            "rows": [
+              [
+                "UBC",
+                "7316",
+                "NCBI"
+              ]
+            ],
+            "ms": 50,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "List 5 drug nodes (label scan with LIMIT)",
+          "cypher": "MATCH (d:drug) RETURN d.node_name AS drug, d.node_index AS idx LIMIT 5",
+          "result": {
+            "columns": [
+              "drug",
+              "idx"
+            ],
+            "rows": [
+              [
+                "Copper",
+                "14012"
+              ],
+              [
+                "Oxygen",
+                "14013"
+              ],
+              [
+                "Flunisolide",
+                "14014"
+              ],
+              [
+                "Alclometasone",
+                "14015"
+              ],
+              [
+                "Medrysone",
+                "14016"
+              ]
+            ],
+            "ms": 31,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Case-insensitive prefix search on disease names (STARTS WITH)",
+          "cypher": "MATCH (d:disease) WHERE toLower(d.node_name) STARTS WITH 'anemia' RETURN d.node_name AS disease LIMIT 6",
+          "result": {
+            "columns": [
+              "disease"
+            ],
+            "rows": [
+              [
+                "anemia of prematurity"
+              ],
+              [
+                "anemia, congenital hypoplastic, with multiple congenital anomalies/in\u2026"
+              ],
+              [
+                "anemia due to chronic disorder"
+              ],
+              [
+                "anemia, nonspherocytic hemolytic, possibly due to defect in porphyrin\u2026"
+              ],
+              [
+                "anemia, nonspherocytic hemolytic, associated with abnormality of red \u2026"
+              ],
+              [
+                "anemia, nonspherocytic hemolytic, due to G6PD deficiency"
+              ]
+            ],
+            "ms": 51,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Substring search on drug names (CONTAINS)",
+          "cypher": "MATCH (d:drug) WHERE d.node_name CONTAINS 'cillin' RETURN d.node_name AS drug LIMIT 6",
+          "result": {
+            "columns": [
+              "drug"
+            ],
+            "rows": [
+              [
+                "Ampicillin"
+              ],
+              [
+                "Nafcillin"
+              ],
+              [
+                "Benzylpenicillin"
+              ],
+              [
+                "Amoxicillin"
+              ],
+              [
+                "Cloxacillin"
+              ],
+              [
+                "Carbenicillin"
+              ]
+            ],
+            "ms": 38,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Regular-expression match on gene names (=~)",
+          "cypher": "MATCH (g:gene_protein) WHERE g.node_name =~ '^TP5[0-9].*' RETURN g.node_name AS gene LIMIT 6",
+          "result": {
+            "columns": [
+              "gene"
+            ],
+            "rows": [
+              [
+                "TP53"
+              ],
+              [
+                "TP53AIP1"
+              ],
+              [
+                "TP53BP1"
+              ],
+              [
+                "TP53BP2"
+              ],
+              [
+                "TP53COR1"
+              ],
+              [
+                "TP53I11"
+              ]
+            ],
+            "ms": 172,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Distinct node sources used across the graph",
+          "cypher": "MATCH (n) RETURN DISTINCT n.node_source AS source ORDER BY source",
+          "result": {
+            "columns": [
+              "source"
+            ],
+            "rows": [
+              [
+                "CTD"
+              ],
+              [
+                "DrugBank"
+              ],
+              [
+                "GO"
+              ],
+              [
+                "HPO"
+              ],
+              [
+                "MONDO"
+              ],
+              [
+                "MONDO_grouped"
+              ],
+              [
+                "NCBI"
+              ],
+              [
+                "REACTOME"
+              ],
+              [
+                "\u2026"
+              ]
+            ],
+            "ms": 206,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Pagination: diseases ordered by name, skip 10 take 5",
+          "cypher": "MATCH (d:disease) RETURN d.node_name AS disease ORDER BY disease SKIP 10 LIMIT 5",
+          "result": {
+            "columns": [
+              "disease"
+            ],
+            "rows": [
+              [
+                "14q24.1q24.3 microdeletion syndrome"
+              ],
+              [
+                "14q32 duplication syndrome"
+              ],
+              [
+                "15q overgrowth syndrome"
+              ],
+              [
+                "15q11q13 microduplication syndrome"
+              ],
+              [
+                "15q14 microdeletion syndrome"
+              ]
+            ],
+            "ms": 51,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "3. Aggregation & Grouping",
+      "intro": "count / avg / collect / percentile aggregations and grouped rollups.",
+      "entries": [
+        {
+          "desc": "Average protein-protein degree across all proteins",
+          "cypher": "MATCH (n:gene_protein)-[:protein_protein]-() WITH n, count(*) AS deg RETURN avg(deg) AS avg_degree, max(deg) AS max_degree, min(deg) AS min_degree",
+          "result": {
+            "columns": [
+              "avg_degree",
+              "max_degree",
+              "min_degree"
+            ],
+            "rows": [
+              [
+                "34.98692",
+                "5197",
+                "1"
+              ]
+            ],
+            "ms": 358,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Top 8 most-connected proteins by PPI degree (grouped count)",
+          "cypher": "MATCH (n:gene_protein)-[:protein_protein]-() RETURN n.node_name AS protein, count(*) AS degree ORDER BY degree DESC LIMIT 8",
+          "result": {
+            "columns": [
+              "protein",
+              "degree"
+            ],
+            "rows": [
+              [
+                "UBC",
+                "5197"
+              ],
+              [
+                "ETS1",
+                "1492"
+              ],
+              [
+                "GATA2",
+                "1363"
+              ],
+              [
+                "CTCF",
+                "1351"
+              ],
+              [
+                "EP300",
+                "1117"
+              ],
+              [
+                "MYC",
+                "1099"
+              ],
+              [
+                "AR",
+                "1099"
+              ],
+              [
+                "RAD21",
+                "961"
+              ]
+            ],
+            "ms": 455,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Collect the first 10 drug names into a single list",
+          "cypher": "MATCH (d:drug) WITH d LIMIT 10 RETURN collect(d.node_name) AS drug_sample",
+          "result": {
+            "columns": [
+              "drug_sample"
+            ],
+            "rows": [
+              [
+                "[Copper, Oxygen, Flunisolide, Alclometasone, Medrysone, Fluorometholo\u2026"
+              ]
+            ],
+            "ms": 34,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Degree distribution percentiles for proteins (50/90/99th)",
+          "cypher": "MATCH (n:gene_protein)-[:protein_protein]-() WITH n, count(*) AS deg RETURN percentileCont(deg,0.5) AS p50, percentileCont(deg,0.9) AS p90, percentileCont(deg,0.99) AS p99",
+          "result": {
+            "columns": [
+              "p50",
+              "p90",
+              "p99"
+            ],
+            "rows": [
+              [
+                "17",
+                "79",
+                "292.94"
+              ]
+            ],
+            "ms": 301,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Relationship-type histogram for one hub protein",
+          "cypher": "MATCH (n:gene_protein {node_name:$name})-[r]-() RETURN type(r) AS rel_type, count(*) AS cnt ORDER BY cnt DESC",
+          "result": {
+            "columns": [
+              "rel_type",
+              "cnt"
+            ],
+            "rows": [
+              [
+                "protein_protein",
+                "5197"
+              ],
+              [
+                "pathway_protein",
+                "176"
+              ],
+              [
+                "anatomy_protein_present",
+                "134"
+              ],
+              [
+                "bioprocess_protein",
+                "53"
+              ],
+              [
+                "cellcomp_protein",
+                "14"
+              ],
+              [
+                "molfunc_protein",
+                "5"
+              ],
+              [
+                "drug_protein",
+                "1"
+              ]
+            ],
+            "ms": 54,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "4. Pattern Matching & Traversal",
+      "intro": "One-hop neighbours, multi-hop expansion, variable-length paths, OPTIONAL MATCH and pattern comprehension.",
+      "entries": [
+        {
+          "desc": "Direct protein interactors of a hub protein (one hop)",
+          "cypher": "MATCH (n:gene_protein {node_name:$name})-[:protein_protein]-(m) RETURN m.node_name AS interactor LIMIT 6",
+          "result": {
+            "columns": [
+              "interactor"
+            ],
+            "rows": [
+              [
+                "TMPO"
+              ],
+              [
+                "TPM4"
+              ],
+              [
+                "MCM3"
+              ],
+              [
+                "CD247"
+              ],
+              [
+                "CSNK1G2"
+              ],
+              [
+                "DPYSL2"
+              ]
+            ],
+            "ms": 54,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Proteins associated with a disease (typed one-hop)",
+          "cypher": "MATCH (dis:disease)-[:disease_protein]-(p:gene_protein) WHERE dis.node_name CONTAINS 'anemia' RETURN dis.node_name AS disease, p.node_name AS protein LIMIT 6",
+          "result": {
+            "columns": [
+              "disease",
+              "protein"
+            ],
+            "rows": [
+              [
+                "iron deficiency anemia",
+                "TMPRSS6"
+              ],
+              [
+                "iron deficiency anemia",
+                "TFRC"
+              ],
+              [
+                "iron deficiency anemia",
+                "SOD1"
+              ],
+              [
+                "iron deficiency anemia",
+                "SLC11A2"
+              ],
+              [
+                "obsolete rare acquired hemolytic anemia",
+                "EIF2AK1"
+              ],
+              [
+                "obsolete rare acquired hemolytic anemia",
+                "TPI1"
+              ]
+            ],
+            "ms": 176,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Two-hop protein neighbourhood size (distinct)",
+          "cypher": "MATCH (n:gene_protein {node_name:$name})-[:protein_protein*2]-(m) RETURN count(DISTINCT m) AS two_hop_reach",
+          "result": {
+            "columns": [
+              "two_hop_reach"
+            ],
+            "rows": [
+              [
+                "17305"
+              ]
+            ],
+            "ms": 374,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Variable-length path 1..3 hops between two named proteins (existence)",
+          "cypher": "MATCH (a:gene_protein {node_name:$src}) MATCH p = (a)-[:protein_protein*1..3]-(b:gene_protein {node_name:$dst}) RETURN length(p) AS hops LIMIT 1",
+          "result": {
+            "columns": [
+              "hops"
+            ],
+            "rows": [
+              [
+                "3"
+              ]
+            ],
+            "ms": 149,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "OPTIONAL MATCH: drug with its (possibly absent) indicated diseases",
+          "cypher": "MATCH (d:drug {node_name:$drug}) OPTIONAL MATCH (d)-[:indication]-(x:disease) RETURN d.node_name AS drug, collect(x.node_name)[0..5] AS indications",
+          "result": {
+            "columns": [
+              "drug",
+              "indications"
+            ],
+            "rows": [
+              [
+                "Copper",
+                "[]"
+              ]
+            ],
+            "ms": 177,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Pattern comprehension: a protein's interactor names inline",
+          "cypher": "MATCH (n:gene_protein {node_name:$name}) RETURN [(n)-[:protein_protein]-(m) | m.node_name][0..6] AS interactors",
+          "result": {
+            "columns": [
+              "interactors"
+            ],
+            "rows": [
+              [
+                "[S1PR1, CLK1, APLP2, CDK9, EIF4E, BCR]"
+              ]
+            ],
+            "ms": 176,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "5. Path Finding",
+      "intro": "Native shortestPath / allShortestPaths plus GDS weighted Dijkstra.",
+      "entries": [
+        {
+          "desc": "Shortest PPI path between two proteins (native shortestPath, \u22645 hops)",
+          "cypher": "MATCH (a:gene_protein {node_name:$src}), (b:gene_protein {node_name:$dst}), p = shortestPath((a)-[:protein_protein*..5]-(b)) RETURN [x IN nodes(p) | x.node_name] AS path, length(p) AS hops",
+          "result": {
+            "columns": [
+              "path",
+              "hops"
+            ],
+            "rows": [
+              [
+                "[UBC, ETS1]",
+                "1"
+              ]
+            ],
+            "ms": 190,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Count of all shortest PPI paths between two proteins",
+          "cypher": "MATCH (a:gene_protein {node_name:$src}), (b:gene_protein {node_name:$dst}), p = allShortestPaths((a)-[:protein_protein*..5]-(b)) RETURN count(p) AS num_shortest_paths, min(length(p)) AS hops",
+          "result": {
+            "columns": [
+              "num_shortest_paths",
+              "hops"
+            ],
+            "rows": [
+              [
+                "1",
+                "1"
+              ]
+            ],
+            "ms": 103,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Cross-domain reasoning path: drug \u2192 protein \u2192 disease (\u22644 hops)",
+          "cypher": "MATCH (d:drug {node_name:$drug}), (dis:disease) WHERE dis.node_name CONTAINS 'anemia' MATCH p = shortestPath((d)-[*..4]-(dis)) RETURN [x IN nodes(p) | coalesce(x.node_name,'?')] AS path, length(p) AS hops LIMIT 1",
+          "result": {
+            "columns": [
+              "path",
+              "hops"
+            ],
+            "rows": [
+              [
+                "[Copper, ALB, Sulfamethoxazole, folic acid deficiency anemia]",
+                "3"
+              ]
+            ],
+            "ms": 138,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "6. GDS Graph Projection & Centrality",
+      "intro": "Project the protein-protein interaction (PPI) sub-network into the GDS in-memory catalog, then run the full suite of centrality algorithms. Centrality ranks the most structurally important proteins.",
+      "entries": [
+        {
+          "desc": "Project the PPI network (gene_protein nodes + protein_protein edges, UNDIRECTED)",
+          "cypher": "CALL gds.graph.project('ppi', 'gene_protein', {protein_protein: {orientation: 'UNDIRECTED'}}) YIELD graphName, nodeCount, relationshipCount RETURN graphName, nodeCount, relationshipCount",
+          "result": {
+            "columns": [
+              "graphName",
+              "nodeCount",
+              "relationshipCount"
+            ],
+            "rows": [
+              [
+                "ppi",
+                "27671",
+                "642150"
+              ]
+            ],
+            "ms": 576,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Degree centrality \u2014 most-connected proteins (top 5)",
+          "cypher": "CALL gds.degree.stream('ppi') YIELD nodeId, score RETURN gds.util.asNode(nodeId).node_name AS protein, score ORDER BY score DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "protein",
+              "score"
+            ],
+            "rows": [
+              [
+                "UBC",
+                "5197"
+              ],
+              [
+                "ETS1",
+                "1492"
+              ],
+              [
+                "GATA2",
+                "1363"
+              ],
+              [
+                "CTCF",
+                "1351"
+              ],
+              [
+                "EP300",
+                "1117"
+              ]
+            ],
+            "ms": 209,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "PageRank \u2014 influence by recursive importance (top 5)",
+          "cypher": "CALL gds.pageRank.stream('ppi', {maxIterations:20, dampingFactor:0.85}) YIELD nodeId, score RETURN gds.util.asNode(nodeId).node_name AS protein, score ORDER BY score DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "protein",
+              "score"
+            ],
+            "rows": [
+              [
+                "UBC",
+                "130.16015"
+              ],
+              [
+                "CTCF",
+                "47.87065"
+              ],
+              [
+                "GATA2",
+                "35.22993"
+              ],
+              [
+                "ETS1",
+                "33.52944"
+              ],
+              [
+                "EGR1",
+                "30.16246"
+              ]
+            ],
+            "ms": 539,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "ArticleRank \u2014 PageRank variant reducing low-degree bias (top 5)",
+          "cypher": "CALL gds.articleRank.stream('ppi', {maxIterations:20}) YIELD nodeId, score RETURN gds.util.asNode(nodeId).node_name AS protein, score ORDER BY score DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "protein",
+              "score"
+            ],
+            "rows": [
+              [
+                "UBC",
+                "21.8711"
+              ],
+              [
+                "CTCF",
+                "6.14524"
+              ],
+              [
+                "ETS1",
+                "6.11367"
+              ],
+              [
+                "GATA2",
+                "5.74197"
+              ],
+              [
+                "EP300",
+                "4.6981"
+              ]
+            ],
+            "ms": 516,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Eigenvector centrality \u2014 influence weighted by neighbours' influence (top 5)",
+          "cypher": "CALL gds.eigenvector.stream('ppi', {maxIterations:20}) YIELD nodeId, score RETURN gds.util.asNode(nodeId).node_name AS protein, score ORDER BY score DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "protein",
+              "score"
+            ],
+            "rows": [
+              [
+                "UBC",
+                "0.28501"
+              ],
+              [
+                "ETS1",
+                "0.12924"
+              ],
+              [
+                "AR",
+                "0.1027"
+              ],
+              [
+                "GATA2",
+                "0.10168"
+              ],
+              [
+                "CTNNB1",
+                "0.09567"
+              ]
+            ],
+            "ms": 640,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Betweenness centrality \u2014 bridge proteins (sampled, top 5)",
+          "cypher": "CALL gds.betweenness.stream('ppi', {samplingSize:1000, samplingSeed:42}) YIELD nodeId, score RETURN gds.util.asNode(nodeId).node_name AS protein, score ORDER BY score DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "protein",
+              "score"
+            ],
+            "rows": [
+              [
+                "UBC",
+                "2030097.25633"
+              ],
+              [
+                "CTCF",
+                "206518.42825"
+              ],
+              [
+                "GATA2",
+                "155684.85341"
+              ],
+              [
+                "ETS1",
+                "143344.21506"
+              ],
+              [
+                "APP",
+                "131256.73375"
+              ]
+            ],
+            "ms": 12644,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Closeness centrality \u2014 proteins central by short distance to all others (top 5)",
+          "cypher": "CALL gds.closeness.stream('ppi') YIELD nodeId, score RETURN gds.util.asNode(nodeId).node_name AS protein, score ORDER BY score DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "protein",
+              "score"
+            ],
+            "rows": [
+              [
+                "RNU2-1",
+                "1"
+              ],
+              [
+                "PSPN",
+                "1"
+              ],
+              [
+                "RNU1-1",
+                "1"
+              ],
+              [
+                "PRAMEF5",
+                "1"
+              ],
+              [
+                "TRGC2",
+                "1"
+              ]
+            ],
+            "ms": 3934,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "7. GDS Community Detection",
+      "intro": "Partition the PPI network into communities / modules and measure local clustering. Communities surface functional protein modules.",
+      "entries": [
+        {
+          "desc": "Louvain modularity communities \u2014 size of the 5 largest",
+          "cypher": "CALL gds.louvain.stream('ppi') YIELD nodeId, communityId RETURN communityId, count(*) AS members ORDER BY members DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "communityId",
+              "members"
+            ],
+            "rows": [
+              [
+                "9150",
+                "3230"
+              ],
+              [
+                "19075",
+                "3191"
+              ],
+              [
+                "2896",
+                "3043"
+              ],
+              [
+                "17361",
+                "2893"
+              ],
+              [
+                "399",
+                "2127"
+              ]
+            ],
+            "ms": 7330,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Weakly Connected Components \u2014 size of the 5 largest components",
+          "cypher": "CALL gds.wcc.stream('ppi') YIELD nodeId, componentId RETURN componentId, count(*) AS members ORDER BY members DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "componentId",
+              "members"
+            ],
+            "rows": [
+              [
+                "0",
+                "18345"
+              ],
+              [
+                "13259",
+                "3"
+              ],
+              [
+                "18250",
+                "2"
+              ],
+              [
+                "3697",
+                "2"
+              ],
+              [
+                "20466",
+                "2"
+              ]
+            ],
+            "ms": 81,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Label Propagation communities \u2014 5 largest",
+          "cypher": "CALL gds.labelPropagation.stream('ppi', {maxIterations:10}) YIELD nodeId, communityId RETURN communityId, count(*) AS members ORDER BY members DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "communityId",
+              "members"
+            ],
+            "rows": [
+              [
+                "3",
+                "18338"
+              ],
+              [
+                "470",
+                "7"
+              ],
+              [
+                "15019",
+                "3"
+              ],
+              [
+                "5457",
+                "2"
+              ],
+              [
+                "110057",
+                "2"
+              ]
+            ],
+            "ms": 780,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Modularity Optimization \u2014 number of communities and largest size",
+          "cypher": "CALL gds.modularityOptimization.stream('ppi', {maxIterations:10}) YIELD nodeId, communityId RETURN count(DISTINCT communityId) AS communities, count(*) AS nodes_assigned",
+          "result": {
+            "columns": [
+              "communities",
+              "nodes_assigned"
+            ],
+            "rows": [
+              [
+                "9576",
+                "27671"
+              ]
+            ],
+            "ms": 5665,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "K-1 Coloring \u2014 number of colors needed (graph coloring)",
+          "cypher": "CALL gds.k1coloring.stream('ppi') YIELD nodeId, color RETURN count(DISTINCT color) AS distinct_colors, count(*) AS nodes",
+          "result": {
+            "columns": [
+              "distinct_colors",
+              "nodes"
+            ],
+            "rows": [
+              [
+                "44",
+                "27671"
+              ]
+            ],
+            "ms": 84,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Triangle Count \u2014 proteins forming the most triangles (top 5)",
+          "cypher": "CALL gds.triangleCount.stream('ppi') YIELD nodeId, triangleCount RETURN gds.util.asNode(nodeId).node_name AS protein, triangleCount ORDER BY triangleCount DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "protein",
+              "triangleCount"
+            ],
+            "rows": [
+              [
+                "UBC",
+                "103223"
+              ],
+              [
+                "ETS1",
+                "23932"
+              ],
+              [
+                "CTNNB1",
+                "17151"
+              ],
+              [
+                "AR",
+                "16095"
+              ],
+              [
+                "GATA2",
+                "14437"
+              ]
+            ],
+            "ms": 237,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Local Clustering Coefficient \u2014 graph-wide average cohesion",
+          "cypher": "CALL gds.localClusteringCoefficient.stream('ppi') YIELD nodeId, localClusteringCoefficient RETURN avg(localClusteringCoefficient) AS avg_clustering_coefficient",
+          "result": {
+            "columns": [
+              "avg_clustering_coefficient"
+            ],
+            "rows": [
+              [
+                "0.07523"
+              ]
+            ],
+            "ms": 265,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "8. GDS Similarity & Node Embeddings",
+      "intro": "Jaccard node similarity over shared interactors, FastRP structural embeddings, and KNN over those embeddings. Embeddings are then persisted to power the vector index in \u00a79.",
+      "entries": [
+        {
+          "desc": "Node Similarity (Jaccard over shared interactors) \u2014 top 5 protein pairs",
+          "cypher": "CALL gds.nodeSimilarity.stream('ppi', {topK:1, similarityCutoff:0.5}) YIELD node1, node2, similarity RETURN gds.util.asNode(node1).node_name AS protein_a, gds.util.asNode(node2).node_name AS protein_b, similarity ORDER BY similarity DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "protein_a",
+              "protein_b",
+              "similarity"
+            ],
+            "rows": [
+              [
+                "TTC22",
+                "CCDC175",
+                "1"
+              ],
+              [
+                "PMS2P4",
+                "STAG3L4",
+                "1"
+              ],
+              [
+                "KRT12",
+                "DDT",
+                "1"
+              ],
+              [
+                "AADAC",
+                "SLC7A10",
+                "1"
+              ],
+              [
+                "OCEL1",
+                "CSAG1",
+                "1"
+              ]
+            ],
+            "ms": 47641,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "FastRP \u2014 generate 64-dim structural embeddings (sample vector)",
+          "cypher": "CALL gds.fastRP.stream('ppi', {embeddingDimension:64, randomSeed:42}) YIELD nodeId, embedding RETURN gds.util.asNode(nodeId).node_name AS protein, embedding LIMIT 3",
+          "result": {
+            "columns": [
+              "protein",
+              "embedding"
+            ],
+            "rows": [
+              [
+                "PHYHIP",
+                "[0.177, -0.064, 0.069, -0.233, \u2026] (dim=64)"
+              ],
+              [
+                "GPANK1",
+                "[0.057, -0.028, -0.334, 0.127, \u2026] (dim=64)"
+              ],
+              [
+                "ZRSR2",
+                "[-0.206, -0.039, -0.242, -0.265, \u2026] (dim=64)"
+              ]
+            ],
+            "ms": 313,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "FastRP mutate \u2014 write 64-dim embeddings into the in-memory projection",
+          "cypher": "CALL gds.fastRP.mutate('ppi', {embeddingDimension:64, mutateProperty:'embedding', randomSeed:42}) YIELD nodePropertiesWritten, computeMillis RETURN nodePropertiesWritten, computeMillis",
+          "result": {
+            "columns": [
+              "nodePropertiesWritten",
+              "computeMillis"
+            ],
+            "rows": [
+              [
+                "27671",
+                "294"
+              ]
+            ],
+            "ms": 357,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "KNN over FastRP embeddings (cosine) \u2014 5 nearest-neighbour protein pairs",
+          "cypher": "CALL gds.knn.stream('ppi', {nodeProperties:['embedding'], topK:1, randomSeed:42, concurrency:1, sampleRate:0.5}) YIELD node1, node2, similarity RETURN gds.util.asNode(node1).node_name AS protein_a, gds.util.asNode(node2).node_name AS protein_b, similarity ORDER BY similarity DESC LIMIT 5",
+          "result": {
+            "columns": [
+              "protein_a",
+              "protein_b",
+              "similarity"
+            ],
+            "rows": [
+              [
+                "FAM71E1",
+                "DMRTC1",
+                "1"
+              ],
+              [
+                "PMS2P4",
+                "STAG3L4",
+                "1"
+              ],
+              [
+                "C3orf14",
+                "OTOA",
+                "1"
+              ],
+              [
+                "TTC22",
+                "LY6G5C",
+                "1"
+              ],
+              [
+                "LINC01558",
+                "NSUN5P2",
+                "1"
+              ]
+            ],
+            "ms": 10163,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Persist FastRP embeddings from projection back to Neo4j nodes",
+          "cypher": "CALL gds.graph.nodeProperties.write('ppi', ['embedding']) YIELD propertiesWritten RETURN propertiesWritten",
+          "result": {
+            "columns": [
+              "propertiesWritten"
+            ],
+            "rows": [
+              [
+                "27671"
+              ]
+            ],
+            "ms": 380,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "List in-memory GDS graphs (catalog inventory)",
+          "cypher": "CALL gds.graph.list() YIELD graphName, nodeCount, relationshipCount, memoryUsage RETURN graphName, nodeCount, relationshipCount, memoryUsage",
+          "result": {
+            "columns": [
+              "graphName",
+              "nodeCount",
+              "relationshipCount",
+              "memoryUsage"
+            ],
+            "rows": [
+              [
+                "ppi",
+                "27671",
+                "642150",
+                "15618 KiB"
+              ]
+            ],
+            "ms": 61,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "9. Indexes, Constraints, Full-text & Vector Search",
+      "intro": "Schema objects that make production queries fast: range/text indexes, uniqueness constraints, a full-text index over entity names, and a cosine VECTOR index over the FastRP embeddings written in \u00a78.",
+      "entries": [
+        {
+          "desc": "Create a RANGE index on gene_protein.node_name",
+          "cypher": "CREATE RANGE INDEX gene_name_idx IF NOT EXISTS FOR (n:gene_protein) ON (n.node_name)",
+          "result": {
+            "columns": [],
+            "rows": [],
+            "ms": 295,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Create a TEXT index on disease.node_name (substring search acceleration)",
+          "cypher": "CREATE TEXT INDEX disease_name_text IF NOT EXISTS FOR (n:disease) ON (n.node_name)",
+          "result": {
+            "columns": [],
+            "rows": [],
+            "ms": 8,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Create a uniqueness CONSTRAINT on drug.node_index",
+          "cypher": "CREATE CONSTRAINT drug_idx_unique IF NOT EXISTS FOR (d:drug) REQUIRE d.node_index IS UNIQUE",
+          "result": {
+            "columns": [],
+            "rows": [],
+            "ms": 20,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "List all indexes currently defined",
+          "cypher": "SHOW INDEXES YIELD name, type, entityType, labelsOrTypes, properties RETURN name, type, labelsOrTypes, properties ORDER BY name",
+          "result": {
+            "columns": [
+              "name",
+              "type",
+              "labelsOrTypes",
+              "properties"
+            ],
+            "rows": [
+              [
+                "disease_name_text",
+                "TEXT",
+                "[disease]",
+                "[node_name]"
+              ],
+              [
+                "drug_idx_unique",
+                "RANGE",
+                "[drug]",
+                "[node_index]"
+              ],
+              [
+                "entity_names",
+                "FULLTEXT",
+                "[drug, disease, gene_protein]",
+                "[node_name]"
+              ],
+              [
+                "gene_name_idx",
+                "RANGE",
+                "[gene_protein]",
+                "[node_name]"
+              ],
+              [
+                "index_343aff4e",
+                "LOOKUP",
+                "None",
+                "None"
+              ],
+              [
+                "index_f7700477",
+                "LOOKUP",
+                "None",
+                "None"
+              ],
+              [
+                "protein_embedding_vec",
+                "VECTOR",
+                "[gene_protein]",
+                "[embedding]"
+              ]
+            ],
+            "ms": 54,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "List all constraints currently defined",
+          "cypher": "SHOW CONSTRAINTS YIELD name, type, labelsOrTypes, properties RETURN name, type, labelsOrTypes, properties",
+          "result": {
+            "columns": [
+              "name",
+              "type",
+              "labelsOrTypes",
+              "properties"
+            ],
+            "rows": [
+              [
+                "drug_idx_unique",
+                "UNIQUENESS",
+                "[drug]",
+                "[node_index]"
+              ]
+            ],
+            "ms": 34,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Create a FULLTEXT index over names of drugs, diseases and genes",
+          "cypher": "CREATE FULLTEXT INDEX entity_names IF NOT EXISTS FOR (n:drug|disease|gene_protein) ON EACH [n.node_name]",
+          "result": {
+            "columns": [],
+            "rows": [],
+            "ms": 11,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Full-text search for 'anemia' across all entity names (ranked)",
+          "cypher": "CALL db.index.fulltext.queryNodes('entity_names', 'anemia') YIELD node, score RETURN labels(node)[0] AS label, node.node_name AS name, score ORDER BY score DESC LIMIT 6",
+          "result": {
+            "columns": [
+              "label",
+              "name",
+              "score"
+            ],
+            "rows": [
+              [
+                "disease",
+                "anemia (disease)",
+                "3.07386"
+              ],
+              [
+                "disease",
+                "congenital anemia",
+                "3.07386"
+              ],
+              [
+                "disease",
+                "neonatal anemia",
+                "3.07386"
+              ],
+              [
+                "disease",
+                "sideroblastic anemia",
+                "3.07386"
+              ],
+              [
+                "disease",
+                "pernicious anemia",
+                "3.07386"
+              ],
+              [
+                "disease",
+                "refractory anemia",
+                "3.07386"
+              ]
+            ],
+            "ms": 60,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Create a cosine VECTOR index over the 64-dim FastRP embeddings",
+          "cypher": "CREATE VECTOR INDEX protein_embedding_vec IF NOT EXISTS FOR (n:gene_protein) ON (n.embedding) OPTIONS {indexConfig: {`vector.dimensions`: 64, `vector.similarity_function`: 'cosine'}}",
+          "result": {
+            "columns": [],
+            "rows": [],
+            "ms": 61,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Vector KNN search \u2014 proteins most similar to a query protein's embedding",
+          "cypher": "MATCH (q:gene_protein {node_name:$name}) WHERE q.embedding IS NOT NULL CALL db.index.vector.queryNodes('protein_embedding_vec', 6, q.embedding) YIELD node, score RETURN node.node_name AS similar_protein, score ORDER BY score DESC",
+          "result": {
+            "columns": [
+              "similar_protein",
+              "score"
+            ],
+            "rows": [
+              [
+                "UBC",
+                "0.99987"
+              ],
+              [
+                "UBR5",
+                "0.94399"
+              ],
+              [
+                "PGAM5",
+                "0.94314"
+              ],
+              [
+                "VAV2",
+                "0.94189"
+              ],
+              [
+                "PRKN",
+                "0.94084"
+              ],
+              [
+                "DDT",
+                "0.94028"
+              ]
+            ],
+            "ms": 35,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "10. APOC Procedures & Functions",
+      "intro": "APOC helpers for meta-modelling, weighted degree, path expansion, collection maths and text utilities.",
+      "entries": [
+        {
+          "desc": "APOC node degree (total) for a hub protein",
+          "cypher": "MATCH (n:gene_protein {node_name:$name}) RETURN apoc.node.degree(n) AS total_degree",
+          "result": {
+            "columns": [
+              "total_degree"
+            ],
+            "rows": [
+              [
+                "5580"
+              ]
+            ],
+            "ms": 8,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "APOC meta-graph: which node labels connect via which relationships (sample)",
+          "cypher": "CALL apoc.meta.graphSample() YIELD nodes, relationships RETURN size(nodes) AS label_count, size(relationships) AS rel_pattern_count",
+          "result": {
+            "columns": [
+              "label_count",
+              "rel_pattern_count"
+            ],
+            "rows": [
+              [
+                "10",
+                "33"
+              ]
+            ],
+            "ms": 35,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "APOC path expansion: unique proteins within 2 PPI hops of a hub",
+          "cypher": "MATCH (n:gene_protein {node_name:$name}) CALL apoc.path.subgraphNodes(n, {relationshipFilter:'protein_protein', maxLevel:2}) YIELD node RETURN count(node) AS nodes_within_2_hops",
+          "result": {
+            "columns": [
+              "nodes_within_2_hops"
+            ],
+            "rows": [
+              [
+                "14651"
+              ]
+            ],
+            "ms": 86,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "APOC collection stats over a degree sample",
+          "cypher": "MATCH (n:gene_protein)-[:protein_protein]-() WITH n, count(*) AS d LIMIT 500 WITH collect(d) AS degs RETURN apoc.coll.max(degs) AS max, apoc.coll.min(degs) AS min, apoc.coll.avg(degs) AS avg",
+          "result": {
+            "columns": [
+              "max",
+              "min",
+              "avg"
+            ],
+            "rows": [
+              [
+                "5197",
+                "2",
+                "157.378"
+              ]
+            ],
+            "ms": 35,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "APOC text utilities: clean & capitalize a drug name",
+          "cypher": "RETURN apoc.text.capitalizeAll(toLower($drug)) AS pretty_name",
+          "result": {
+            "columns": [
+              "pretty_name"
+            ],
+            "rows": [
+              [
+                "Copper"
+              ]
+            ],
+            "ms": 9,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "title": "11. Production Analytical Scenarios",
+      "intro": "End-to-end questions a biomedical analyst or the Eugene chat agent would actually ask \u2014 drug repurposing, hub discovery, shared-target reasoning and disease comorbidity structure.",
+      "entries": [
+        {
+          "desc": "Drug-repurposing: drugs targeting proteins linked to a disease",
+          "cypher": "MATCH (dis:disease)-[:disease_protein]-(p:gene_protein)-[:drug_protein]-(d:drug) WHERE dis.node_name CONTAINS 'anemia' RETURN d.node_name AS candidate_drug, count(DISTINCT p) AS shared_targets ORDER BY shared_targets DESC LIMIT 6",
+          "result": {
+            "columns": [
+              "candidate_drug",
+              "shared_targets"
+            ],
+            "rows": [
+              [
+                "Copper",
+                "10"
+              ],
+              [
+                "Zinc acetate",
+                "8"
+              ],
+              [
+                "Zinc sulfate, unspecified form",
+                "8"
+              ],
+              [
+                "Zinc",
+                "8"
+              ],
+              [
+                "Zinc chloride",
+                "8"
+              ],
+              [
+                "Artenimol",
+                "8"
+              ]
+            ],
+            "ms": 21,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Most disease-associated proteins (potential master regulators)",
+          "cypher": "MATCH (p:gene_protein)-[:disease_protein]-(d:disease) RETURN p.node_name AS protein, count(DISTINCT d) AS disease_count ORDER BY disease_count DESC LIMIT 6",
+          "result": {
+            "columns": [
+              "protein",
+              "disease_count"
+            ],
+            "rows": [
+              [
+                "SOD2",
+                "273"
+              ],
+              [
+                "TP53",
+                "257"
+              ],
+              [
+                "PTEN",
+                "247"
+              ],
+              [
+                "TNF",
+                "225"
+              ],
+              [
+                "IL6",
+                "208"
+              ],
+              [
+                "KRAS",
+                "200"
+              ]
+            ],
+            "ms": 168,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Shared targets between two drugs (mechanistic overlap)",
+          "cypher": "MATCH (d1:drug)-[:drug_protein]-(p:gene_protein)-[:drug_protein]-(d2:drug) WHERE d1.node_name < d2.node_name RETURN d1.node_name AS drug_a, d2.node_name AS drug_b, count(DISTINCT p) AS shared ORDER BY shared DESC LIMIT 6",
+          "result": {
+            "columns": [
+              "drug_a",
+              "drug_b",
+              "shared"
+            ],
+            "rows": [
+              [
+                "Zinc chloride",
+                "Zinc sulfate, unspecified form",
+                "126"
+              ],
+              [
+                "Zinc",
+                "Zinc acetate",
+                "125"
+              ],
+              [
+                "Zinc acetate",
+                "Zinc sulfate, unspecified form",
+                "93"
+              ],
+              [
+                "Zinc acetate",
+                "Zinc chloride",
+                "93"
+              ],
+              [
+                "Zinc",
+                "Zinc chloride",
+                "90"
+              ],
+              [
+                "Zinc",
+                "Zinc sulfate, unspecified form",
+                "90"
+              ]
+            ],
+            "ms": 6593,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Disease comorbidity by shared phenotypes (anemia cohort, top pairs)",
+          "cypher": "MATCH (a:disease) WHERE a.node_name CONTAINS 'anemia' MATCH (a)-[:disease_phenotype_positive]-(ph:effect_phenotype)-[:disease_phenotype_positive]-(b:disease) WHERE a.node_name < b.node_name WITH a, b, count(DISTINCT ph) AS shared_phenotypes RETURN a.node_name AS disease_a, b.node_name AS disease_b, shared_phenotypes ORDER BY shared_phenotypes DESC LIMIT 6",
+          "result": {
+            "columns": [
+              "disease_a",
+              "disease_b",
+              "shared_phenotypes"
+            ],
+            "rows": [
+              [
+                "Fanconi anemia complementation group",
+                "X-linked intellectual disability",
+                "58"
+              ],
+              [
+                "Fanconi anemia complementation group",
+                "developmental and epileptic encephalopathy",
+                "49"
+              ],
+              [
+                "Fanconi anemia complementation group",
+                "orofaciodigital syndrome",
+                "48"
+              ],
+              [
+                "Fanconi anemia complementation group",
+                "intellectual disability, autosomal dominant",
+                "46"
+              ],
+              [
+                "Diamond-Blackfan anemia",
+                "X-linked intellectual disability",
+                "45"
+              ],
+              [
+                "Diamond-Blackfan anemia",
+                "Fanconi anemia complementation group",
+                "44"
+              ]
+            ],
+            "ms": 720,
+            "counters": "",
+            "error": null
+          }
+        },
+        {
+          "desc": "Pathway enrichment: pathways with the most member proteins",
+          "cypher": "MATCH (pw:pathway)-[:pathway_protein]-(p:gene_protein) RETURN pw.node_name AS pathway, count(DISTINCT p) AS proteins ORDER BY proteins DESC LIMIT 6",
+          "result": {
+            "columns": [
+              "pathway",
+              "proteins"
+            ],
+            "rows": [
+              [
+                "Neutrophil degranulation",
+                "478"
+              ],
+              [
+                "Olfactory Signaling Pathway",
+                "393"
+              ],
+              [
+                "Generic Transcription Pathway",
+                "346"
+              ],
+              [
+                "Antigen processing: Ubiquitination & Proteasome degradation",
+                "309"
+              ],
+              [
+                "G alpha (i) signalling events",
+                "259"
+              ],
+              [
+                "Neddylation",
+                "234"
+              ]
+            ],
+            "ms": 47,
+            "counters": "",
+            "error": null
+          }
+        }
+      ]
+    }
+  ]
+}

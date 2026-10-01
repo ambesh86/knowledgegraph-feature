@@ -1,0 +1,222 @@
+# =============================================================================
+# Eugene — PRODUCTION compose (pull pre-built images from ghcr.io)
+# =============================================================================
+# This mirrors docker-compose.yml but PULLS pre-built images from GitHub
+# Container Registry instead of building locally. Use this on EC2 or any
+# server where you do not want to build from source on every deploy.
+#
+# Build the images with the CI workflow:   .github/workflows/build-images.yml
+#
+# -----------------------------------------------------------------------------
+# QUICK START (on EC2 or any Docker host)
+# -----------------------------------------------------------------------------
+#   1. Copy your env file:
+#        cp docker.env.template docker.env
+#        # then edit docker.env and fill in API keys + Neo4j password
+#
+#   2. Log in to GHCR (one-time per host) using a Personal Access Token with
+#      the `read:packages` scope:
+#        echo <PAT> | docker login ghcr.io -u <github-username> --password-stdin
+#
+#   3. Pull and start:
+#        docker compose -f docker-compose.prod.yml --env-file docker.env pull
+#        docker compose -f docker-compose.prod.yml --env-file docker.env up -d
+#
+#   4. Tail logs:
+#        docker compose -f docker-compose.prod.yml logs -f eugene_agent_ws
+#
+#   5. Stop (keep Neo4j data):
+#        docker compose -f docker-compose.prod.yml down
+#
+#   6. Stop and WIPE all Neo4j data:
+#        docker compose -f docker-compose.prod.yml down -v
+#
+# -----------------------------------------------------------------------------
+# IMAGE PINNING
+# -----------------------------------------------------------------------------
+# The IMAGE_TAG env var controls which tag is pulled for every Eugene image.
+# Defaults to `latest`. In production, pin to an immutable SHA tag:
+#
+#   IMAGE_TAG=sha-abc1234 docker compose -f docker-compose.prod.yml up -d
+#
+# -----------------------------------------------------------------------------
+# REGISTRY / OWNER OVERRIDES
+# -----------------------------------------------------------------------------
+#   REGISTRY     defaults to ghcr.io
+#   IMAGE_OWNER  defaults to aisemanticexpert  (the GitHub repo owner)
+#
+#   REGISTRY=ghcr.io IMAGE_OWNER=my-org IMAGE_TAG=v1.2.3 \
+#     docker compose -f docker-compose.prod.yml up -d
+#
+# -----------------------------------------------------------------------------
+# SERVICE URLS (after startup)
+# -----------------------------------------------------------------------------
+#   Neo4j Browser:          http://<host>:17474
+#   Core API Swagger:       http://<host>:18000/docs
+#   MCP Server:             http://<host>:18443
+#   Agent API Swagger:      http://<host>:18001/docs
+#   Streamlit Chat UI:      http://<host>:18501
+#   Next.js Chat UI:        http://<host>:18502
+#
+# Lock these ports to your IP / VPN in the EC2 security group — they are
+# unauthenticated when ENVIRONMENT=local.
+# =============================================================================
+
+x-eugene-image-defaults: &image-defaults
+  pull_policy: always              # always check the registry for a newer tag
+  restart: unless-stopped          # survive reboots, don't loop on crashes
+
+services:
+
+  # --------------------------------------------------------------------------
+  # DATA TIER — Neo4j (public image, not built by us)
+  # --------------------------------------------------------------------------
+  neo4j:
+    image: neo4j:5.26.9-community-bullseye
+    container_name: eugene-neo4j
+    restart: unless-stopped
+    ports:
+      - "17474:7474"   # HTTP (Browser UI)
+      - "17687:7687"   # Bolt
+    environment:
+      - NEO4J_AUTH=${NEO4J_USERNAME:-neo4j}/${NEO4J_PASSWORD:-eugene_local_2024}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*,gds.*
+      - NEO4J_server_default__listen__address=0.0.0.0
+      - NEO4J_server_bolt_tls__level=DISABLED
+      - NEO4J_server_memory_pagecache_size=512M
+      - NEO4J_server_memory_heap_initial__size=512m
+      - NEO4J_server_memory_heap_max__size=1024m
+    volumes:
+      - eugene_neo4j_data:/data
+      - eugene_neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # API TIER — Core Eugene API
+  # --------------------------------------------------------------------------
+  eugene_ws:
+    <<: *image-defaults
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-aisemanticexpert}/eugene-ws:${IMAGE_TAG:-latest}
+    container_name: eugene-ws
+    ports:
+      - "18000:8000"
+    env_file:
+      - docker.env
+    environment:
+      - NEO4J_URI=${NEO4J_URI:-bolt://neo4j:7687}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-eugene_local_2024}
+      - ENVIRONMENT=${ENVIRONMENT:-local}
+      # Entra ID vars are imported at module load even in local mode (not used for auth)
+      - ENTRA_CLIENT_ID=not-used-in-local-mode
+      - ENTRA_CLIENT_SECRET=not-used-in-local-mode
+      - ENTRA_TENANT_ID=not-used-in-local-mode
+      - ENTRA_AUTHORITY=https://login.microsoftonline.com/not-used
+      - ENTRA_SCOPE=email
+      - REDIRECT_URI=${REDIRECT_URI:-http://localhost:18000/auth/callback}
+      - REDIRECT_PATH=/auth/callback
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # TOOL TIER — MCP Server
+  # --------------------------------------------------------------------------
+  eugene_mcp:
+    <<: *image-defaults
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-aisemanticexpert}/eugene-mcp:${IMAGE_TAG:-latest}
+    container_name: eugene-mcp
+    ports:
+      - "18443:8000"
+    env_file:
+      - docker.env
+    environment:
+      - EUGENE_API_BASE=http://eugene_ws:8000
+      - EUGENE_ISSUER=${EUGENE_ISSUER:-https://eugene.ai.cslg1.cslg.net/f8645748-68c6-4eec-bd61-c71341a6ed7d}
+      - EUGENE_AUDIENCE=${EUGENE_AUDIENCE:-api://eugene/ff58ded5-c309-4cc8-ae6a-3b7157b83879}
+    depends_on:
+      eugene_ws:
+        condition: service_healthy
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # AGENT TIER — Strands + FastAPI
+  # --------------------------------------------------------------------------
+  eugene_agent_ws:
+    <<: *image-defaults
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-aisemanticexpert}/eugene-agent-ws:${IMAGE_TAG:-latest}
+    container_name: eugene-agent-ws
+    ports:
+      - "18001:8000"
+    env_file:
+      - docker.env
+    environment:
+      - EUGENE_MCP_SERVER_URL=http://eugene_mcp:8000/mcp
+      - ENVIRONMENT=${ENVIRONMENT:-local}
+    depends_on:
+      - eugene_mcp
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # FRONTEND (legacy) — Streamlit
+  # --------------------------------------------------------------------------
+  eugene_agent_ui:
+    <<: *image-defaults
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-aisemanticexpert}/eugene-agent-ui:${IMAGE_TAG:-latest}
+    container_name: eugene-agent-ui
+    ports:
+      - "18501:8501"
+    environment:
+      - EUGENE_AGENT_API_URL=http://eugene_agent_ws:8000/agent/api/query/stream
+    depends_on:
+      - eugene_agent_ws
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # FRONTEND (v2) — Next.js 14 + Chakra + NVL
+  # --------------------------------------------------------------------------
+  eugene_agent_ui_next:
+    <<: *image-defaults
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-aisemanticexpert}/eugene-agent-ui-next:${IMAGE_TAG:-latest}
+    container_name: eugene-agent-ui-next
+    ports:
+      - "18502:18502"
+    environment:
+      - NODE_ENV=production
+      - EUGENE_CORE_API_URL=http://eugene_ws:8000
+      - EUGENE_AGENT_API_URL=http://eugene_agent_ws:8000/agent/api
+    depends_on:
+      - eugene_agent_ws
+      - eugene_ws
+    networks:
+      - eugene-net
+
+volumes:
+  eugene_neo4j_data:
+    driver: local
+  eugene_neo4j_logs:
+    driver: local
+
+networks:
+  eugene-net:
+    driver: bridge

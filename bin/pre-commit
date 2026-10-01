@@ -1,0 +1,40 @@
+#!/bin/sh
+
+
+function validate_tf() {
+	# Validate terraform
+	local tf_dir=$1
+	echo "Validating terraform..."
+	cd $tf_dir
+	terraform validate
+	if [ $? -ne 0 ]; then
+		echo "❌ Validation failed. Fix errors and try again."
+		exit 1
+	fi
+	cd -
+}
+validate_tf "difflabs/iac/eugene-services" 
+validate_tf "difflabs/iac/eugene-containers"
+
+
+# Run Black on the src/ directory
+echo "Running Black formatter..."
+black src/
+if [ $? -ne 0 ]; then
+    echo "❌ Black formatting failed. Fix errors and try again."
+    exit 1
+fi
+
+# Stage any changes made by Black (optional, but recommended)
+git add -u src/
+
+# Run pytest
+echo "Running pytest..."
+pytest src
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Fix errors and try again."
+    exit 1
+fi
+
+echo "✅ All checks passed. Proceeding with commit."
+exit 0

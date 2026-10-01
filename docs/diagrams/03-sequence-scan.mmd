@@ -1,0 +1,49 @@
+%% Figure 3 — System sequence: one scheduled scan, configuration through to report
+sequenceDiagram
+    autonumber
+    participant SCH as Scheduler<br/>(APScheduler / EventBridge)
+    participant ORC as Orchestrator
+    participant CFG as S3 config/
+    participant COL as Collectors (x4)
+    participant EXT as Public APIs
+    participant RAW as S3 raw/ (STAGING)
+    participant SCO as Scorer (pure)
+    participant LLM as Bedrock Nova
+    participant CUR as S3 curated/ (FINAL)
+    participant IDX as In-memory index
+    participant NTF as Notifier
+
+    SCH->>ORC: run(trigger="cron") at 02:00 UTC
+    ORC->>ORC: acquire single-flight lock<br/>held → return "skipped", never queue
+    ORC->>CUR: PUT runs/<id> status=running
+    ORC->>CFG: GET scan_config.json<br/>weights · thresholds · sources
+
+    loop per therapeutic area
+        ORC->>COL: collect(area, settings, today)
+        COL->>EXT: HTTP (rate-limited, retried)
+        EXT-->>COL: payloads or failure
+        COL-->>ORC: RawSignal[] + SourceReport[]
+        Note over COL,ORC: a failed source degrades ITSELF,<br/>never the whole run
+        ORC->>RAW: PUT raw/dt=/run=/area=/source=
+        Note over ORC,RAW: STAGING WRITTEN BEFORE ANY JUDGEMENT<br/>so a pipeline bug cannot corrupt the archive<br/>that exists to recover from pipeline bugs
+        ORC->>ORC: enrich → relevance gate → dedupe → merge
+        ORC->>SCO: score(signal, area, config, today)
+        SCO-->>ORC: ScoreResult + factor breakdown
+        Note over SCO: PURE — no I/O, no clock.<br/>Same input, same output, forever
+        alt priority high or med
+            ORC->>LLM: rationale(breakdown + evidence only)
+            LLM-->>ORC: one paragraph
+            ORC->>ORC: reject if it contains a number<br/>absent from the input
+        end
+        ORC->>CUR: GET snapshot ~30d ago (delta baseline)
+        ORC->>ORC: aggregate company scores
+        ORC->>CUR: PUT snapshot → signals → companies → index
+        Note over ORC,CUR: SNAPSHOT FIRST — a crash mid-publish must not<br/>leave the index without a delta baseline
+    end
+
+    ORC->>CUR: PUT runs/<id> status=ok | degraded
+    ORC->>IDX: refresh (atomic swap)
+    opt score >= threshold AND notifications enabled
+        ORC->>NTF: dispatch — idempotent per (run, signal)
+    end
+    Note over SCH,NTF: Weekly: the same corpus is rendered into the<br/>ranked partnership briefing and published as an artifact

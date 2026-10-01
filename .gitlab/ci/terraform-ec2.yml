@@ -1,0 +1,50 @@
+workflow:
+  rules:
+    - when: always
+  auto_cancel:
+    on_new_commit: interruptible
+
+variables:
+  TF_EC2_MODULE: ${CI_COMMIT_BRANCH}-ec2
+  TF_EC2_PLAN: ${TF_EC2_MODULE}-plan.tfplan
+
+stages:
+  - terraform-ec2
+  - apply-ec2
+
+validate-ec2:
+  stage: terraform-ec2
+  extends:
+    - .aws-role-assumption
+  script:
+    - cd ${TF_ROOT}/${TF_EC2_MODULE}
+    - terraform init -backend-config="../global.s3.backend.hcl" -backend-config="./${TF_EC2_MODULE}.s3.backend.hcl"
+    - terraform validate
+
+plan-ec2:
+  extends:
+    - .aws-role-assumption
+  stage: terraform-ec2
+  script:
+    - cd ${TF_ROOT}/${TF_EC2_MODULE}
+    - terraform init -backend-config="../global.s3.backend.hcl" -backend-config="./${TF_EC2_MODULE}.s3.backend.hcl"
+    - terraform plan -var-file="${CI_COMMIT_BRANCH}.tfvars" -out=../../../${TF_EC2_PLAN}
+    - cd -
+  artifacts:
+    paths:
+      - ${TF_EC2_PLAN}
+    expire_in: 1 week
+  dependencies:
+    - validate-ec2
+
+apply-ec2:
+  extends:
+    - .aws-role-assumption
+  stage: apply-ec2
+  script:
+    - cd ${TF_ROOT}/${TF_EC2_MODULE}
+    - terraform init -backend-config="../global.s3.backend.hcl" -backend-config="./${TF_EC2_MODULE}.s3.backend.hcl"
+    - terraform apply -auto-approve ../../../${TF_EC2_PLAN}
+  dependencies:
+    - plan-ec2
+  when: manual

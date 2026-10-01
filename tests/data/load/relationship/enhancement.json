@@ -1,0 +1,16 @@
+{
+    "enhancement": [
+        {
+            "source_entity": "i53 mRNA",
+            "target_entity": "CYBB locus",
+            "relation": "Enhancement",
+            "relationship_description": "Transient delivery of i53 mRNA led to a 50% increase in HDR efficiency at the CYBB locus, indicating its role in enhancing gene editing outcomes."
+        },
+        {
+            "source_entity": "i53 mRNA",
+            "target_entity": "MAGT1 locus",
+            "relation": "Enhancement",
+            "relationship_description": "The combination of i53 mRNA and GSE56 mRNA led to a significant increase in HDR efficiency at the MAGT1 locus, demonstrating its effectiveness in gene editing."
+        }
+    ]
+}

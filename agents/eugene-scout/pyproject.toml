@@ -1,0 +1,23 @@
+[project]
+name = "eugene-scout"
+version = "1.0.0"
+description = "Real-time pipeline intelligence & partnership opportunity scanning (CSL BD Use Case 1)"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+# `src` on the path so tests import `scout.*` exactly as the container does
+# (PYTHONPATH=/app/src in the Dockerfile). Without this the suite would exercise a
+# different import graph than production, which is the kind of difference that hides
+# a packaging bug until deploy.
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["error::DeprecationWarning:scout.*"]
+markers = [
+    "stress: load and volume tests; slower, still hermetic (deselect with '-m \"not stress\"')",
+    "live: hits real public APIs; excluded by default (select with '-m live')",
+]
+addopts = "-q --strict-markers -m 'not live'"
+
+[tool.pyright]
+extraPaths = ["src"]

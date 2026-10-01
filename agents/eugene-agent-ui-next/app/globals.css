@@ -1,0 +1,46 @@
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Geist, Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ambient background — layered radial gradients. Lighter variant for light mode. */
+body[data-theme="dark"] {
+  background:
+    radial-gradient(circle at 10% -10%, rgba(58, 79, 247, 0.22) 0%, transparent 40%),
+    radial-gradient(circle at 90% 110%, rgba(62, 202, 180, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 55% 50%, rgba(124, 140, 255, 0.08) 0%, transparent 60%),
+    #07090f;
+  background-attachment: fixed;
+}
+
+body[data-theme="light"] {
+  background:
+    radial-gradient(circle at 10% -10%, rgba(58, 79, 247, 0.09) 0%, transparent 40%),
+    radial-gradient(circle at 90% 110%, rgba(62, 202, 180, 0.08) 0%, transparent 45%),
+    #f6f8fc;
+  background-attachment: fixed;
+}
+
+/* Cytoscape canvas must inherit so our ambient bg shines through */
+canvas {
+  background: transparent !important;
+}
+
+/* Reduce motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+  }
+}

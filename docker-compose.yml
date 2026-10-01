@@ -1,0 +1,466 @@
+#C:\Users\Ambesh.Kumar\Downloads\CSL-Bio-informatics\knowledgegraph-feature-nextgen
+# ============================================================================
+# Eugene - Local Development Docker Compose
+# ============================================================================
+#
+# BEFORE RUNNING:
+#   1. Copy the env template:  cp docker.env.template docker.env
+#   2. Fill in your credentials in docker.env (see instructions inside)
+#
+# COMMANDS:
+#   Start all services:     docker compose up --build
+#   Start in background:    docker compose up --build -d
+#   Stop all services:      docker compose down
+#   View logs:              docker compose logs -f <service>
+#   Rebuild one service:    docker compose up --build <service>
+#   Reset Neo4j data:       docker compose down -v
+#
+# SERVICE URLS (after startup):
+#   Neo4j Browser:    http://localhost:17474
+#   Core API Swagger: http://localhost:18000/docs
+#   Core API Login:   http://localhost:18000/login
+#   MCP Server:       http://localhost:18443
+#   Agent API Docs:   http://localhost:18001/docs
+#   Chat UI:          http://localhost:18501
+#
+# NOTE: Ports are prefixed with 1xxxx to avoid conflicts with other
+#       local services. Inside Docker, services use standard ports.
+#
+# STARTUP ORDER: neo4j → eugene_ws → eugene_mcp → eugene_agent_ws → eugene_agent_ui
+# ============================================================================
+
+services:
+
+  # --------------------------------------------------------------------------
+  # DATA TIER: Neo4j Graph Database
+  # --------------------------------------------------------------------------
+  neo4j:
+    image: neo4j:5.26.9-community-bullseye
+    container_name: eugene-neo4j
+    restart: unless-stopped
+    ports:
+      - "17474:7474"   # HTTP (Browser UI)
+      - "17687:7687"   # Bolt (Driver connections)
+    environment:
+      - NEO4J_AUTH=${NEO4J_USERNAME:-neo4j}/${NEO4J_PASSWORD:-eugene_local_2024}
+      - NEO4J_PLUGINS=["apoc","graph-data-science"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*,gds.*
+      - NEO4J_server_default__listen__address=0.0.0.0
+      - NEO4J_server_bolt_tls__level=DISABLED
+      - NEO4J_server_memory_pagecache_size=1536M
+      - NEO4J_server_memory_heap_initial__size=1024m
+      - NEO4J_server_memory_heap_max__size=3072m
+    volumes:
+      - eugene_neo4j_data:/data
+      - eugene_neo4j_logs:/logs
+      # CSV staging for LOAD CSV ingests (ClinicalTrials.gov — see bin/ctgov/).
+      # LOAD CSV 'file:///x.csv' resolves against this directory.
+      - ./dumps/ct_import:/var/lib/neo4j/import
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # AUTH TIER: Postgres — Atlas user accounts, sessions, login audit
+  # --------------------------------------------------------------------------
+  atlas_postgres:
+    image: postgres:16-alpine
+    container_name: atlas-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${ATLAS_PG_USER:-atlas}
+      - POSTGRES_PASSWORD=${ATLAS_PG_PASSWORD:-atlas_local_2026}
+      - POSTGRES_DB=${ATLAS_PG_DB:-atlas}
+    ports:
+      - "15432:5432"
+    volumes:
+      - atlas_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ATLAS_PG_USER:-atlas} -d ${ATLAS_PG_DB:-atlas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # API TIER: Core Eugene API (FastAPI)
+  # --------------------------------------------------------------------------
+  eugene_ws:
+    build:
+      context: .
+      dockerfile: docker/eugene_ws/Dockerfile
+    container_name: eugene-ws
+    restart: unless-stopped
+    ports:
+      - "18000:8000"
+    env_file:
+      - docker.env
+    environment:
+      - NEO4J_URI=${NEO4J_URI:-bolt://neo4j:7687}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-eugene_local_2024}
+      - ENVIRONMENT=local
+      # Entra ID vars required at module load even in local mode (not used for auth)
+      - ENTRA_CLIENT_ID=not-used-in-local-mode
+      - ENTRA_CLIENT_SECRET=not-used-in-local-mode
+      - ENTRA_TENANT_ID=not-used-in-local-mode
+      - ENTRA_AUTHORITY=https://login.microsoftonline.com/not-used
+      - ENTRA_SCOPE=email
+      - REDIRECT_URI=http://localhost:18000/auth/callback
+      - REDIRECT_PATH=/auth/callback
+      # Vector store (Milvus embedded / milvus-lite) for semantic search.
+      # NOTE: the variable is EUGENE_MILVUS_URI, *not* MILVUS_URI. pymilvus reads
+      # MILVUS_URI into its own global Config at import time and requires an
+      # http(s):// address — setting it to a local path made `import pymilvus`
+      # raise, which silently disabled every /vector route. milvus-lite also
+      # requires the path to end in `.db`.
+      - EUGENE_MILVUS_URI=/app/.db/eugene_vectors.db
+      - EUGENE_MILVUS_TOKEN=
+      # Persisted HuggingFace cache for the all-MiniLM-L6-v2 embedding model
+      # and the bge-reranker cross-encoder.
+      - HF_HOME=/app/.hf_cache
+      # Cross-encoder reranking (opt-in per request via ?rerank=true).
+      # NOT an ms-marco model: those are trained on web prose and rank a Markdown
+      # table below the abstract of the paper it came from, which measured WORSE
+      # than no reranking at all on tabular evidence.
+      - EUGENE_RERANK_MODEL=BAAI/bge-reranker-base
+      # Candidate cap == latency budget: ~0.46s per candidate on CPU.
+      - EUGENE_RERANK_MAX_CANDIDATES=60
+      - EUGENE_RERANK_ENABLED=true
+    volumes:
+      - eugene_vector:/app/.db
+      - eugene_hf_cache:/app/.hf_cache
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # TOOL TIER: MCP Server (FastMCP)
+  # --------------------------------------------------------------------------
+  eugene_mcp:
+    build:
+      context: .
+      dockerfile: docker/eugene_mcp/Dockerfile
+    container_name: eugene-mcp
+    restart: unless-stopped
+    ports:
+      - "18443:8000"
+    env_file:
+      - docker.env
+    environment:
+      - EUGENE_API_BASE=http://eugene_ws:8000
+      - EUGENE_ISSUER=https://eugene.ai.cslg1.cslg.net/f8645748-68c6-4eec-bd61-c71341a6ed7d
+      - EUGENE_AUDIENCE=api://eugene/ff58ded5-c309-4cc8-ae6a-3b7157b83879
+    depends_on:
+      eugene_ws:
+        condition: service_healthy
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # AGENT TIER: Agent Backend (FastAPI + Strands)
+  # --------------------------------------------------------------------------
+  eugene_agent_ws:
+    build:
+      context: .
+      dockerfile: docker/eugene_agent_ws/Dockerfile
+    container_name: eugene-agent-ws
+    restart: unless-stopped
+    ports:
+      - "18001:8000"
+    env_file:
+      - docker.env
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - EUGENE_MCP_SERVER_URL=http://eugene_mcp:8000/mcp
+      # Read by the agent to fetch /health/data-freshness, so it can date facts
+      # drawn from the internal snapshot instead of implying they are current.
+      - EUGENE_CORE_API_URL=http://eugene_ws:8000
+      - ENVIRONMENT=local
+      # Allow long prompts so attached-document context (uploads) isn't rejected.
+      - EUGENE_MAX_PROMPT_CHARS=40000
+    depends_on:
+      - eugene_mcp
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # FRONTEND TIER (legacy): Streamlit Chat UI — kept for regression parity.
+  # New traffic should use eugene_agent_ui_next on port 18502.
+  # --------------------------------------------------------------------------
+  eugene_agent_ui:
+    build:
+      context: .
+      dockerfile: docker/eugene_agent_ui/Dockerfile
+    container_name: eugene-agent-ui
+    restart: unless-stopped
+    ports:
+      - "18501:8501"
+    environment:
+      - EUGENE_AGENT_API_URL=http://eugene_agent_ws:8000/agent/api/query/stream
+    depends_on:
+      - eugene_agent_ws
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # FRONTEND TIER (v2): Next.js 14 + Chakra UI + NVL context-graph
+  # --------------------------------------------------------------------------
+  eugene_agent_ui_next:
+    build:
+      context: .
+      dockerfile: docker/eugene_agent_ui_next/Dockerfile
+    container_name: eugene-agent-ui-next
+    restart: unless-stopped
+    ports:
+      - "18502:18502"
+    # Sources OPENAI_API_KEY (used for LLM conversation titling) from docker.env,
+    # same as the backend services. Missing key → heuristic titles, still works.
+    env_file:
+      - docker.env
+    environment:
+      - NODE_ENV=production
+      - EUGENE_CORE_API_URL=http://eugene_ws:8000
+      - EUGENE_AGENT_API_URL=http://eugene_agent_ws:8000/agent/api
+      # Document extraction / evidence service, proxied via /api/atlas/ade/*
+      - EUGENE_ADE_URL=http://eugene_ade:8000
+      # BD partnership scanner (Use Case 1). Backs Radar, Watchlist and the
+      # Today counters via /api/atlas/signals, /watchlist, /scout/*.
+      - EUGENE_SCOUT_URL=http://eugene_scout:8000
+      # SCOUT_API_TOKEN comes from env_file (docker.env) — see the note in
+      # eugene_scout. Listing it here would override the file with an empty value.
+      - ATLAS_DATABASE_URL=postgres://${ATLAS_PG_USER:-atlas}:${ATLAS_PG_PASSWORD:-atlas_local_2026}@atlas_postgres:5432/${ATLAS_PG_DB:-atlas}
+      - ATLAS_JWT_SECRET=${ATLAS_JWT_SECRET:-dev-atlas-secret-change-in-prod-please-32chars}
+      - OPENAI_TITLE_MODEL=${OPENAI_TITLE_MODEL:-gpt-4o-mini}
+    depends_on:
+      - eugene_agent_ws
+      - eugene_ws
+      - atlas_postgres
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # DOCUMENT TIER: Agentic Document Extraction (PDF → S3 → Markdown + grounded
+  # JSON chunks → on-the-fly highlighted evidence renders)
+  # --------------------------------------------------------------------------
+  eugene_ade:
+    build:
+      context: .
+      dockerfile: docker/eugene_ade/Dockerfile
+    container_name: eugene-ade
+    restart: unless-stopped
+    ports:
+      - "18100:8000"
+    environment:
+      - ADE_S3_BUCKET=${ADE_S3_BUCKET:-eugene-research-pdfs-087084717211}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      # Set ADE_LAYOUT_ENABLED=false to skip the DocLayout-YOLO model entirely;
+      # extraction still works, with structural labels only.
+      - ADE_LAYOUT_ENABLED=${ADE_LAYOUT_ENABLED:-true}
+      # How many documents extract at once (queueing beats thrashing).
+      - ADE_MAX_CONCURRENT_INGESTS=${ADE_MAX_CONCURRENT_INGESTS:-2}
+      # Write extracted papers/passages into the graph so fused retrieval can
+      # surface them. Set false to keep extraction S3-only.
+      - ADE_GRAPH_INDEX_ENABLED=${ADE_GRAPH_INDEX_ENABLED:-true}
+      - NEO4J_URI=${NEO4J_URI:-bolt://neo4j:7687}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-eugene_local_2024}
+      # Cap torch/OpenMP intra-op threads. The semaphore above bounds how many
+      # DOCUMENTS run concurrently, but torch parallelises *within* a single
+      # inference across every core — measured at ~1000% CPU even with two
+      # documents. These caps are what actually stop the extraction service from
+      # starving Neo4j and the graph API on the same host.
+      - OMP_NUM_THREADS=${ADE_TORCH_THREADS:-3}
+      - MKL_NUM_THREADS=${ADE_TORCH_THREADS:-3}
+      - TORCH_NUM_THREADS=${ADE_TORCH_THREADS:-3}
+      - HF_HOME=/app/.hf_cache
+    env_file:
+      - docker.env
+    volumes:
+      # Persist the 40MB YOLO weights so restarts don't re-download them.
+      - eugene_ade_models:/app/.hf_cache
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # INGESTION TIER: nightly research-evidence pipeline (01:00 daily)
+  # discover → extract (via eugene_ade) → index → rank
+  # --------------------------------------------------------------------------
+  eugene_ingestion:
+    build:
+      context: .
+      dockerfile: docker/eugene_ingestion/Dockerfile
+    container_name: eugene-ingestion
+    restart: unless-stopped
+    ports:
+      - "18200:8000"
+    environment:
+      - EUGENE_ADE_URL=http://eugene_ade:8000
+      - NEO4J_URI=${NEO4J_URI:-bolt://neo4j:7687}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-eugene_local_2024}
+      # Nightly sweep time. UTC by default so it doesn't shift with DST.
+      - INGESTION_HOUR=${INGESTION_HOUR:-1}
+      - INGESTION_MINUTE=${INGESTION_MINUTE:-0}
+      - INGESTION_TZ=${INGESTION_TZ:-UTC}
+      # M4 guards. Measured on this corpus (3,483 nodes / 4,541 edges): exact
+      # closeness and harmonic each exceed ~10 min in pure-Python networkx —
+      # infeasible for a nightly job that must also extract documents. They are
+      # skipped and the composite renormalizes over the survivors, which is
+      # precisely the degradation M4 specifies. Betweenness stays active via
+      # pivot sampling.
+      # Closeness and harmonic are exact O(nm) with no approximation available —
+      # genuinely infeasible here, so they skip and the composite renormalizes.
+      - CENTRALITY_CLOSENESS_MAX=${CENTRALITY_CLOSENESS_MAX:-2000}
+      - CENTRALITY_HARMONIC_MAX=${CENTRALITY_HARMONIC_MAX:-2000}
+      # Betweenness is pivot-approximated and eigenvector/Katz are power
+      # iteration — all three are affordable well past the old 4,000 default.
+      # At 7,639 nodes the old guards skipped 5 of 7 metrics and left the
+      # composite resting on PageRank + degree alone.
+      - CENTRALITY_BETWEENNESS_MAX=${CENTRALITY_BETWEENNESS_MAX:-50000}
+      - CENTRALITY_EIGENVECTOR_MAX=${CENTRALITY_EIGENVECTOR_MAX:-50000}
+      - CENTRALITY_KATZ_MAX=${CENTRALITY_KATZ_MAX:-50000}
+      - CENTRALITY_PIVOT_MIN=${CENTRALITY_PIVOT_MIN:-1500}
+      - CENTRALITY_PIVOTS=${CENTRALITY_PIVOTS:-300}
+    depends_on:
+      - eugene_ade
+      - neo4j
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - eugene-net
+
+  # --------------------------------------------------------------------------
+  # INTELLIGENCE TIER: BD partnership opportunity scanning (02:00 daily)
+  # collect (ClinicalTrials / Europe PMC / USPTO / SEC EDGAR) → stage to S3 raw
+  # → score deterministically → publish to S3 curated → rank
+  #
+  # CSL BD AWS Bioinformatics Agentic Workflow, Use Case 1.
+  #
+  # S3 is the ONLY database. raw/ holds untouched upstream payloads (staging),
+  # curated/ holds scored signals and the per-area index the API serves from.
+  # There is no Postgres here on purpose: the corpus is small, read-mostly and
+  # rebuilt wholesale by each scan, which is the shape S3 serves well.
+  #
+  # Runs at 02:00 — AFTER eugene_ingestion's 01:00 sweep, so a scan sees the
+  # papers that run just indexed rather than racing it.
+  # --------------------------------------------------------------------------
+  eugene_scout:
+    build:
+      context: .
+      dockerfile: docker/eugene_scout/Dockerfile
+    container_name: eugene-scout
+    restart: unless-stopped
+    ports:
+      # 127.0.0.1 ONLY. This API can rewrite scoring config and trigger scans that
+      # burn a rate-limited USPTO quota; publishing it on 0.0.0.0 put that on the
+      # LAN. The UI reaches it over the compose network, where nothing is published.
+      # Kept bound locally so an operator can still curl it for diagnostics.
+      - "127.0.0.1:18300:8000"
+    # Sources AWS credentials and USPTO_API_KEY from docker.env, same as the
+    # other services. Missing USPTO key → that one source degrades and reports
+    # itself; the other three still produce a briefing.
+    env_file:
+      - docker.env
+    environment:
+      - SCOUT_S3_BUCKET=${SCOUT_S3_BUCKET:-eugene-scout-087084717211}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      # The scoped S3 identity is NOT mapped here. `environment:` overrides
+      # `env_file:`, and compose substitutes ${SCOUT_AWS_*} from the shell — which
+      # does not see docker.env — so these lines rendered as empty strings and would
+      # have blanked the credentials entirely. Precedence is resolved in
+      # scout/config.py instead, where it is explicit and unit-tested:
+      # SCOUT_AWS_* wins if set, otherwise the shared AWS_* from docker.env.
+      # Provision the scoped identity with:
+      #   infrastructure/iam/provision-scout-iam.sh
+      - EUGENE_CORE_API_URL=http://eugene_ws:8000
+      # Schedule. UTC by default so it does not shift with DST — same reasoning
+      # already applied to INGESTION_TZ.
+      - SCOUT_CRON_HOUR=${SCOUT_CRON_HOUR:-2}
+      - SCOUT_CRON_MINUTE=${SCOUT_CRON_MINUTE:-0}
+      - SCOUT_TZ=${SCOUT_TZ:-UTC}
+      # Weekly ranked partnership briefing. 0 = Monday.
+      - SCOUT_WEEKLY_DIGEST_DOW=${SCOUT_WEEKLY_DIGEST_DOW:-0}
+      # Notifications are OFF unless explicitly enabled. A dev box must not be
+      # able to message the BD team because someone ran `docker compose up`.
+      - SCOUT_NOTIFY_ENABLED=${SCOUT_NOTIFY_ENABLED:-false}
+      - SCOUT_NOTIFY_WEBHOOK_URL=${SCOUT_NOTIFY_WEBHOOK_URL:-}
+      # Rationale prose only — the LLM never produces a score or a ranking.
+      # Bedrock defaults to Nova: Anthropic models are blocked in this account
+      # by a missing Marketplace subscription, so Claude would fail every call.
+      - SCOUT_LLM_ENABLED=${SCOUT_LLM_ENABLED:-true}
+      - LLM_PROVIDER=${LLM_PROVIDER:-bedrock}
+      - BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID:-amazon.nova-lite-v1:0}
+      - SCOUT_LOG_LEVEL=${SCOUT_LOG_LEVEL:-INFO}
+      # json for shipping, text for reading a terminal.
+      - SCOUT_LOG_FORMAT=${SCOUT_LOG_FORMAT:-json}
+      # SCOUT_API_TOKEN deliberately comes from env_file (docker.env) and is NOT
+      # listed here. An `environment:` entry takes precedence over `env_file:`, so
+      # `SCOUT_API_TOKEN=${SCOUT_API_TOKEN:-}` silently blanked the token whenever the
+      # variable was not also exported into the shell — the service came up
+      # unauthenticated while docker.env said otherwise.
+    # The in-memory index grows with the corpus, and a runaway would otherwise take
+    # the host down with it. 1GB is ~10x the measured footprint at 161 signals.
+    mem_limit: 1g
+    cpus: 2.0
+    depends_on:
+      - eugene_ws
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - eugene-net
+
+volumes:
+  eugene_ade_models:
+    driver: local
+  atlas_pg_data:
+    driver: local
+  eugene_neo4j_data:
+    driver: local
+  eugene_neo4j_logs:
+    driver: local
+  eugene_vector:
+    driver: local
+  eugene_hf_cache:
+    driver: local
+
+networks:
+  eugene-net:
+    driver: bridge

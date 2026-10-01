@@ -1,0 +1,50 @@
+workflow:
+  rules:
+    - when: always
+  auto_cancel:
+    on_new_commit: interruptible
+
+variables:
+  TF_SVC_MODULE: ${CI_COMMIT_BRANCH}-services
+  TF_SVC_PLAN: ${TF_SVC_MODULE}-plan.tfplan
+
+stages:
+  - terraform-services
+  - apply-services
+
+validate-services:
+  stage: terraform-services
+  extends:
+    - .aws-role-assumption
+  script:
+    - cd ${TF_ROOT}/${TF_SVC_MODULE}
+    - terraform init -backend-config="../global.s3.backend.hcl" -backend-config="./${TF_SVC_MODULE}.s3.backend.hcl"
+    - terraform validate
+
+plan-services:
+  extends:
+    - .aws-role-assumption
+  stage: terraform-services
+  script:
+    - cd ${TF_ROOT}/${TF_SVC_MODULE}
+    - terraform init -backend-config="../global.s3.backend.hcl" -backend-config="./${TF_SVC_MODULE}.s3.backend.hcl"
+    - terraform plan -var-file="${CI_COMMIT_BRANCH}.tfvars" -out=../../../${TF_SVC_PLAN}
+    - cd -
+  artifacts:
+    paths:
+      - ${TF_SVC_PLAN}
+    expire_in: 1 week
+  dependencies:
+    - validate-services
+
+apply-services:
+  extends:
+    - .aws-role-assumption
+  stage: apply-services
+  script:
+    - cd ${TF_ROOT}/${TF_SVC_MODULE}
+    - terraform init -backend-config="../global.s3.backend.hcl" -backend-config="./${TF_SVC_MODULE}.s3.backend.hcl"
+    - terraform apply -auto-approve ../../../${TF_SVC_PLAN}
+  dependencies:
+    - plan-services
+  when: manual

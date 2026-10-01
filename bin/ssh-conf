@@ -1,0 +1,20 @@
+Host *
+    Protocol 2
+    PasswordAuthentication no
+    ConnectTimeout 60
+    ServerAliveInterval 30
+    ServerAliveCountMax 4
+
+Host fuze-ai
+    HostName 10.88.203.26
+    User ubuntu
+    IdentityFile ~/keys/fuze_ai_host.pem
+
+Host eugene-1
+    HostName 10.88.203.251
+    User ec2-user
+    IdentityFile ~/accounts/neo4j/eugene-1.pem
+
+Host gitlab.com
+   HostName gitlab.com
+   IdentityFile ~/keys/gitlab-key

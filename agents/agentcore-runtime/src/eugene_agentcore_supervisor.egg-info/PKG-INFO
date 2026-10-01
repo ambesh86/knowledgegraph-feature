@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: eugene-agentcore-supervisor
+Version: 0.1.0
+Summary: Lightweight Amazon Bedrock AgentCore gateway to the existing Eugene Agent
+Requires-Python: >=3.12
+Requires-Dist: bedrock-agentcore>=1.0.0
+Requires-Dist: httpx>=0.27
+Provides-Extra: test
+Requires-Dist: pytest>=8.0; extra == "test"

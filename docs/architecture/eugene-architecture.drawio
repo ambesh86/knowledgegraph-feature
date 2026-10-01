@@ -1,0 +1,670 @@
+<mxfile host="app.diagrams.net" modified="2026-03-22T00:00:00.000Z" agent="Claude" version="24.0.0" type="device">
+  <diagram id="system-overview" name="System Architecture">
+    <mxGraphModel dx="2800" dy="2200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3300" pageHeight="2400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ================================================================ -->
+        <!-- TITLE -->
+        <!-- ================================================================ -->
+        <mxCell id="title" value="&lt;b&gt;Eugene — Biomedical Knowledge Graph Platform&lt;/b&gt;&lt;br&gt;Complete System Architecture" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;fontSize=20;" vertex="1" parent="1">
+          <mxGeometry x="900" y="20" width="520" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- EXTERNAL ACTORS (Top) -->
+        <!-- ================================================================ -->
+        <mxCell id="actors-group" value="External Actors &amp; Data Sources" style="text;html=1;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="280" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Users -->
+        <mxCell id="user" value="&lt;b&gt;CSL Researcher&lt;/b&gt;&lt;br&gt;Asks questions,&lt;br&gt;browses data" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="140" width="40" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Entra ID -->
+        <mxCell id="entra" value="&lt;b&gt;Microsoft Entra ID&lt;/b&gt;&lt;br&gt;OAuth 2.0 SSO&lt;br&gt;(CSL Identity)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management;labelBackgroundColor=none;sketch=0;fillColor=#DD344C;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;pointerEvents=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="280" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- Data Sources -->
+        <mxCell id="uspto" value="&lt;b&gt;USPTO&lt;/b&gt;&lt;br&gt;Patents" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="480" y="130" width="80" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pubmed" value="&lt;b&gt;PubMed&lt;/b&gt;&lt;br&gt;Articles" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="580" y="130" width="80" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ctgov" value="&lt;b&gt;ClinicalTrials&lt;/b&gt;&lt;br&gt;.gov" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="680" y="130" width="80" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="centree" value="&lt;b&gt;Centree&lt;/b&gt;&lt;br&gt;CSL Internal" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="780" y="130" width="80" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="drugbank" value="&lt;b&gt;DrugBank&lt;/b&gt;&lt;br&gt;Drug Data" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="880" y="130" width="80" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- LLM Providers -->
+        <mxCell id="openai" value="&lt;b&gt;OpenAI&lt;/b&gt;&lt;br&gt;GPT-4.1" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg;fillColor=#E6E6E6;strokeColor=#999999;rounded=1;arcSize=10;html=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="135" width="48" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="anthropic" value="&lt;b&gt;Anthropic&lt;/b&gt;&lt;br&gt;Claude" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6E6E6;strokeColor=#999999;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="135" width="80" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- AWS CLOUD BOUNDARY -->
+        <!-- ================================================================ -->
+        <mxCell id="aws-boundary" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FF9900;strokeWidth=3;dashed=1;dashPattern=8 4;arcSize=5;" vertex="1" parent="1">
+          <mxGeometry x="30" y="240" width="1280" height="980" as="geometry" />
+        </mxCell>
+
+        <mxCell id="aws-label" value="&lt;b&gt;AWS Cloud&lt;/b&gt; (ECS Fargate + EC2)" style="text;html=1;align=left;verticalAlign=middle;fontSize=13;fontColor=#FF9900;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="45" y="245" width="300" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- ALB -->
+        <!-- ================================================================ -->
+        <mxCell id="alb" value="&lt;b&gt;Application Load Balancer&lt;/b&gt;&lt;br&gt;TLS Termination | Path-based Routing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="300" y="290" width="740" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- TIER 1: FRONTEND -->
+        <!-- ================================================================ -->
+        <mxCell id="tier1-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#81C784;strokeWidth=2;arcSize=5;" vertex="1" parent="1">
+          <mxGeometry x="60" y="370" width="280" height="240" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tier1-label" value="&lt;b&gt;FRONTEND TIER&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=12;fontColor=#2E7D32;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="375" width="280" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ui-service" value="&lt;b&gt;eugene-agent-ui&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Streamlit | Port 8501&lt;br&gt;&lt;br&gt;• Chat interface&lt;br&gt;• OAuth token input&lt;br&gt;• Tool selection (eugene/pubmed/http)&lt;br&gt;• SSE streaming display&lt;br&gt;• Conversation management&lt;br&gt;&lt;br&gt;&lt;i&gt;eugene_agent_ui.py&lt;/i&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#81C784;strokeWidth=2;fontSize=12;verticalAlign=top;spacingTop=5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="405" width="240" height="190" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- TIER 2: AGENT -->
+        <!-- ================================================================ -->
+        <mxCell id="tier2-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#64B5F6;strokeWidth=2;arcSize=5;" vertex="1" parent="1">
+          <mxGeometry x="380" y="370" width="320" height="370" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tier2-label" value="&lt;b&gt;AGENT TIER&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=12;fontColor=#1565C0;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="375" width="320" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="agent-service" value="&lt;b&gt;eugene-agent-ws&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;font style=&quot;font-size:10px&quot;&gt;FastAPI + Strands | Port 8001&lt;br&gt;&lt;br&gt;• EugeneDataAgent (ReAct pattern)&lt;br&gt;• System prompt: biomedical CI agent&lt;br&gt;• SlidingWindowConversationManager&lt;br&gt;• FileSessionManager&lt;br&gt;• Streaming SSE responses&lt;br&gt;• JWT auth + allowlist&lt;br&gt;&lt;br&gt;&lt;i&gt;eugene_data_agent.py&lt;/i&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64B5F6;strokeWidth=2;fontSize=12;verticalAlign=top;spacingTop=5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="400" y="405" width="280" height="195" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mcp-service" value="&lt;b&gt;eugene-mcp&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;font style=&quot;font-size:10px&quot;&gt;FastMCP | Port 8443 | Stateless HTTP&lt;br&gt;&lt;br&gt;12 Tools:&lt;br&gt;• lookup_node_by_value • fetch_node_details&lt;br&gt;• fetch_drug_aliases • fetch_facts&lt;br&gt;• fetch_node_relationships • fetch_paths&lt;br&gt;• has_reachable_path • fetch_by_label&lt;br&gt;• fetch_similar • fetch_identity&lt;br&gt;• find_organization_names&lt;br&gt;• find_organization_assets&lt;br&gt;&lt;br&gt;&lt;i&gt;eugene_mcp.py&lt;/i&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64B5F6;strokeWidth=2;fontSize=11;verticalAlign=top;spacingTop=5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="400" y="620" width="280" height="205" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- TIER 3: CORE API -->
+        <!-- ================================================================ -->
+        <mxCell id="tier3-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FFB74D;strokeWidth=2;arcSize=5;" vertex="1" parent="1">
+          <mxGeometry x="740" y="370" width="550" height="540" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tier3-label" value="&lt;b&gt;CORE API TIER&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=12;fontColor=#E65100;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="375" width="550" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api-service" value="&lt;b&gt;eugene_ws&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;font style=&quot;font-size:10px&quot;&gt;FastAPI | Port 8000 | 20 Routers&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FFB74D;strokeWidth=2;fontSize=12;verticalAlign=top;spacingTop=5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="760" y="405" width="510" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Router Groups inside API -->
+        <mxCell id="auth-routes" value="&lt;b&gt;Auth&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;/login&lt;br&gt;/auth/whoami&lt;br&gt;/auth/callback&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#F48FB1;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="770" y="455" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="system-routes" value="&lt;b&gt;System&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;/ (root)&lt;br&gt;/health&lt;br&gt;/stats&lt;br&gt;/release-notes&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#CE93D8;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="880" y="455" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="foundation-routes" value="&lt;b&gt;Foundation (9 routers)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;/count/{label}&lt;br&gt;/labels/{label}&lt;br&gt;/node/find/{value}&lt;br&gt;/node/details&lt;br&gt;/graph/relationship/start/{id}&lt;br&gt;/graph/path/start/{id}/end/{id}&lt;br&gt;/graph/reachability/start/{id}/end/{id}&lt;br&gt;/graph/facts/start/{id}&lt;br&gt;/facets | /similarity/{label}&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EAF6;strokeColor=#9FA8DA;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="770" y="550" width="230" height="155" as="geometry" />
+        </mxCell>
+
+        <mxCell id="drug-routes" value="&lt;b&gt;Drug&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;/drugs/aliases/{name}&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#80DEEA;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="990" y="455" width="120" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="patent-routes" value="&lt;b&gt;Patent&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;/patents/drugs&lt;br&gt;/patents/clinicaltrials&lt;br&gt;/patents/count&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#FFF176;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="455" width="130" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pubmed-routes" value="&lt;b&gt;PubMed&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;/pubmed/drugs&lt;br&gt;/pubmed/clinicaltrials&lt;br&gt;/pubmed/count&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F8E9;strokeColor=#AED581;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="550" width="130" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="org-routes" value="&lt;b&gt;Organization&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;/organizations/{name}&lt;br&gt;/organizations/assets/{id}&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFEBE9;strokeColor=#BCAAA4;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="645" width="130" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Provider/Adapter Layer -->
+        <mxCell id="provider-layer" value="&lt;b&gt;Provider / Orchestrator Layer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;FoundationalNHopProvider | FoundationalFactsOrchestrator | FoundationalPathProvider&lt;br&gt;FoundationalNodeDetailsProvider | DrugAliasesUpdateOrchestrator | ListEmbeddingsProvider&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#FFE082;fontSize=10;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="770" y="720" width="490" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mapper-layer" value="&lt;b&gt;Mapper Layer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;GraphMapper | FactsMapper | NodeDetailsMapper | PatentSearchResultMapper | PubmedSearchResultMapper | DrugAliasesResultMapper&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#CE93D8;fontSize=10;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="770" y="790" width="490" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="adapter-layer" value="&lt;b&gt;Neo4j Adapter Layer (20 adapters)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Neo4jFoundationalNHopAdapter | Neo4jFoundationalPathAdapter | Neo4jFoundationalNodeAdapter&lt;br&gt;Neo4jPatentQueryAdapter | Neo4jPubmedQueryAdapter | Neo4jDrugAliasesAdapter | Neo4jOrganizationSearchAdapter ...&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFECB3;strokeColor=#FFB74D;fontSize=10;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="770" y="850" width="490" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- TIER 4: DATA -->
+        <!-- ================================================================ -->
+        <mxCell id="tier4-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#BDBDBD;strokeWidth=2;arcSize=5;" vertex="1" parent="1">
+          <mxGeometry x="60" y="950" width="540" height="250" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tier4-label" value="&lt;b&gt;DATA TIER&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=12;fontColor=#616161;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="955" width="540" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="neo4j" value="&lt;b&gt;Neo4j 5.26.9 CE&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Graph Database | Bolt: 7687 | HTTP: 7474&lt;br&gt;&lt;br&gt;• 36 node types (Drug, Disease, Gene/Protein, ...)&lt;br&gt;• 27 relationship types&lt;br&gt;• APOC 5.26.1 extended procedures&lt;br&gt;• GDS 2.13.4 graph algorithms&lt;br&gt;&lt;br&gt;Algorithms: GraphSage, FastRP,&lt;br&gt;Node Similarity, Label Propagation,&lt;br&gt;Community Detection (Leiden)&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=top;spacingTop=5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="990" width="280" height="195" as="geometry" />
+        </mxCell>
+
+        <mxCell id="milvus" value="&lt;b&gt;Milvus&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Vector Database | gRPC&lt;br&gt;&lt;br&gt;• Semantic search&lt;br&gt;• ANN (Approximate&lt;br&gt;  Nearest Neighbor)&lt;br&gt;• sentence-transformers&lt;br&gt;• model2vec embeddings&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;spacingTop=5;align=center;" vertex="1" parent="1">
+          <mxGeometry x="400" y="990" width="180" height="195" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- INGESTION PIPELINE (Right side) -->
+        <!-- ================================================================ -->
+        <mxCell id="ingest-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBE9E7;strokeColor=#FF8A65;strokeWidth=2;arcSize=5;" vertex="1" parent="1">
+          <mxGeometry x="640" y="950" width="670" height="250" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ingest-label" value="&lt;b&gt;DATA INGESTION PIPELINE&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=12;fontColor=#BF360C;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="955" width="670" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ingest-download" value="&lt;b&gt;1. Download &amp; Parse&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;download_patents.py&lt;br&gt;download_pubmed.py&lt;br&gt;download_clinicaltrail.py&lt;br&gt;analyze.py (LLM extraction)&lt;br&gt;analyze_organizations.py&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF8A65;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="660" y="990" width="170" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ingest-transform" value="&lt;b&gt;2. Transform&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Entity + Relationship models&lt;br&gt;Extraction container&lt;br&gt;NodeExpansionProvider&lt;br&gt;(adds type hypernodes)&lt;br&gt;convert_patents.py&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF8A65;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="850" y="990" width="170" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ingest-load" value="&lt;b&gt;3. Load to Neo4j&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;store_triples.py&lt;br&gt;ingest_organizations.py&lt;br&gt;ingest_drug_aliases.py&lt;br&gt;link_pubmed_articles.py&lt;br&gt;Neo4jGraphragAdapter&lt;br&gt;(MERGE Cypher queries)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF8A65;fontSize=10;verticalAlign=top;spacingTop=3;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="990" width="170" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Ingestion flow arrows -->
+        <mxCell id="ingest-arrow1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#FF8A65;strokeWidth=2;" edge="1" parent="1" source="ingest-download" target="ingest-transform">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ingest-arrow2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#FF8A65;strokeWidth=2;" edge="1" parent="1" source="ingest-transform" target="ingest-load">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Ingestion to Neo4j arrow -->
+        <mxCell id="ingest-to-neo4j" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryDy=-15;strokeColor=#BF360C;strokeWidth=2;dashed=1;" edge="1" parent="1" source="ingest-load" target="neo4j">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1125" y="1170" />
+              <mxPoint x="220" y="1170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ingest-to-neo4j-label" value="MERGE Cypher" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#BF360C;" vertex="1" connectable="0" parent="ingest-to-neo4j">
+          <mxGeometry x="0.2" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- CONNECTION ARROWS -->
+        <!-- ================================================================ -->
+
+        <!-- User to ALB -->
+        <mxCell id="user-to-alb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.1;entryY=0;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1" source="user" target="alb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="user-to-alb-label" value="HTTPS" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;" vertex="1" connectable="0" parent="user-to-alb">
+          <mxGeometry x="-0.3" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Entra to API -->
+        <mxCell id="entra-to-api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;strokeColor=#DD344C;strokeWidth=1;dashed=1;" edge="1" parent="1" source="entra" target="alb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="entra-label" value="OAuth 2.0" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#DD344C;" vertex="1" connectable="0" parent="entra-to-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ALB to UI -->
+        <mxCell id="alb-to-ui" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.1;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#81C784;strokeWidth=2;" edge="1" parent="1" source="alb" target="ui-service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="alb-to-ui-label" value="/agent/ui/*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#2E7D32;" vertex="1" connectable="0" parent="alb-to-ui">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ALB to Agent -->
+        <mxCell id="alb-to-agent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.4;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#64B5F6;strokeWidth=2;" edge="1" parent="1" source="alb" target="agent-service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="alb-to-agent-label" value="/agent/api/*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#1565C0;" vertex="1" connectable="0" parent="alb-to-agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ALB to API -->
+        <mxCell id="alb-to-api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.8;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#FFB74D;strokeWidth=2;" edge="1" parent="1" source="alb" target="api-service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="alb-to-api-label" value="/*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#E65100;" vertex="1" connectable="0" parent="alb-to-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- UI to Agent -->
+        <mxCell id="ui-to-agent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;strokeColor=#1565C0;strokeWidth=2;" edge="1" parent="1" source="ui-service" target="agent-service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ui-to-agent-label" value="HTTP POST + JWT&lt;br&gt;SSE Streaming" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#1565C0;" vertex="1" connectable="0" parent="ui-to-agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Agent to MCP -->
+        <mxCell id="agent-to-mcp" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1565C0;strokeWidth=2;" edge="1" parent="1" source="agent-service" target="mcp-service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="agent-to-mcp-label" value="MCP Protocol&lt;br&gt;+ Bearer JWT" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#1565C0;" vertex="1" connectable="0" parent="agent-to-mcp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Agent to LLM -->
+        <mxCell id="agent-to-llm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.2;exitDx=0;exitDy=0;strokeColor=#999999;strokeWidth=1;dashed=1;" edge="1" parent="1" source="agent-service" target="openai">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1124" y="444" />
+              <mxPoint x="1124" y="159" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agent-to-llm-label" value="OpenAI / Anthropic API" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#999999;" vertex="1" connectable="0" parent="agent-to-llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- MCP to API -->
+        <mxCell id="mcp-to-api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#FFB74D;strokeWidth=2;" edge="1" parent="1" source="mcp-service" target="provider-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mcp-to-api-label" value="HTTP GET/POST&lt;br&gt;+ Bearer JWT&lt;br&gt;30s timeout" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#E65100;" vertex="1" connectable="0" parent="mcp-to-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Routers to Provider layer -->
+        <mxCell id="routes-to-provider" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E65100;strokeWidth=1;" edge="1" parent="1" source="foundation-routes" target="provider-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Provider to Mapper -->
+        <mxCell id="provider-to-mapper" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E65100;strokeWidth=1;" edge="1" parent="1" source="provider-layer" target="mapper-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Mapper to Adapter -->
+        <mxCell id="mapper-to-adapter" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#E65100;strokeWidth=1;" edge="1" parent="1" source="mapper-layer" target="adapter-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Adapter to Neo4j -->
+        <mxCell id="adapter-to-neo4j" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.3;entryDx=0;entryDy=0;entryDy=-15;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="adapter-layer" target="neo4j">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="660" y="875" />
+              <mxPoint x="660" y="1040" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="adapter-to-neo4j-label" value="Bolt Protocol&lt;br&gt;(Cypher queries)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#6c8ebf;" vertex="1" connectable="0" parent="adapter-to-neo4j">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Data sources to ingestion -->
+        <mxCell id="sources-to-ingest" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#999999;strokeWidth=1;dashed=1;" edge="1" parent="1" source="uspto" target="ingest-download">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="520" y="210" />
+              <mxPoint x="500" y="210" />
+              <mxPoint x="500" y="930" />
+              <mxPoint x="745" y="930" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sources-label" value="Batch ingestion&lt;br&gt;(CLI scripts)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#999999;" vertex="1" connectable="0" parent="sources-to-ingest">
+          <mxGeometry x="0.7" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- DDD PATTERN LEGEND -->
+        <!-- ================================================================ -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#BDBDBD;strokeWidth=1;arcSize=5;" vertex="1" parent="1">
+          <mxGeometry x="60" y="650" width="280" height="270" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend-title" value="&lt;b&gt;DDD LAYER PATTERN&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px;color:#666&quot;&gt;Every domain follows this structure&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="655" width="280" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="l1" value="&lt;b&gt;Router&lt;/b&gt; (FastAPI endpoint)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EAF6;strokeColor=#9FA8DA;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="95" y="695" width="210" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="&lt;b&gt;Provider / Orchestrator&lt;/b&gt; (business logic)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#FFE082;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="95" y="730" width="210" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="&lt;b&gt;Mapper&lt;/b&gt; (DataFrame → Domain Model)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#CE93D8;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="95" y="765" width="210" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="l4" value="&lt;b&gt;Adapter&lt;/b&gt; (Cypher queries → Neo4j)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFECB3;strokeColor=#FFB74D;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="95" y="800" width="210" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="l5" value="&lt;b&gt;Model&lt;/b&gt; (Pydantic / dataclass)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2F1;strokeColor=#80CBC4;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="95" y="835" width="210" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="l6" value="&lt;b&gt;Conf&lt;/b&gt; (factory functions / manual DI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#90A4AE;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="95" y="870" width="210" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- Legend arrows -->
+        <mxCell id="la1" style="exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#999;strokeWidth=1;" edge="1" parent="1" source="l1" target="l2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="la2" style="exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#999;strokeWidth=1;" edge="1" parent="1" source="l2" target="l3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="la3" style="exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#999;strokeWidth=1;" edge="1" parent="1" source="l3" target="l4"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ================================================================ -->
+        <!-- AUTH FLOW LEGEND -->
+        <!-- ================================================================ -->
+        <mxCell id="auth-legend" value="&lt;b&gt;JWT Auth Flow&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;1. User visits /login → gets HS256 JWT (24h TTL)&lt;br&gt;2. JWT passed as Bearer token in every request&lt;br&gt;3. Each service validates: aud, iss, exp, claims (tid, sub, roles, upn)&lt;br&gt;4. Token propagates: UI → Agent WS → MCP → Core API&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#F48FB1;fontSize=10;verticalAlign=top;spacingTop=5;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1230" width="420" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- ================================================================ -->
+        <!-- TECH STACK LEGEND -->
+        <!-- ================================================================ -->
+        <mxCell id="tech-legend" value="&lt;b&gt;Technology Stack&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Language: Python 3.13 | Framework: FastAPI + Pydantic v2 | Agent: Strands (ReAct) | Tools: FastMCP&lt;br&gt;Graph DB: Neo4j 5.26.9 CE + APOC + GDS | Vector DB: Milvus | LLM: OpenAI GPT-4.1 / Anthropic Claude&lt;br&gt;Embeddings: sentence-transformers, model2vec | Infra: Docker, AWS ECS Fargate, Terraform, GitLab CI/CD&lt;br&gt;Auth: MS Entra ID (OAuth 2.0) → Eugene JWT (HS256) | UI: Streamlit | Eval: MLflow&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#90A4AE;fontSize=10;verticalAlign=top;spacingTop=5;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="500" y="1230" width="570" height="85" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ================================================================ -->
+  <!-- PAGE 2: DATA MODEL -->
+  <!-- ================================================================ -->
+  <diagram id="data-model" name="Knowledge Graph Schema">
+    <mxGraphModel dx="2200" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="2400" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="dm-title" value="&lt;b&gt;Eugene Knowledge Graph — Data Model&lt;/b&gt;&lt;br&gt;Node Types and Relationship Types" style="text;html=1;align=center;verticalAlign=middle;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="600" y="20" width="500" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Foundation Nodes -->
+        <mxCell id="drug-node" value="&lt;b&gt;DRUG&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;node_name&lt;br&gt;node_id&lt;br&gt;description&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="200" y="200" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="disease-node" value="&lt;b&gt;DISEASE&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;node_name&lt;br&gt;node_id&lt;br&gt;description&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="600" y="200" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="protein-node" value="&lt;b&gt;GENE_PROTEIN&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;node_name&lt;br&gt;node_id&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pathway-node" value="&lt;b&gt;PATHWAY&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="200" y="80" width="120" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="anatomy-node" value="&lt;b&gt;ANATOMY&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="600" y="80" width="120" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="phenotype-node" value="&lt;b&gt;EFFECT_&lt;br&gt;PHENOTYPE&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="800" y="200" width="120" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="exposure-node" value="&lt;b&gt;EXPOSURE&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="800" y="80" width="110" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Drug aliases -->
+        <mxCell id="synonym-node" value="&lt;b&gt;DRUG_SYNONYM&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="product-node" value="&lt;b&gt;DRUG_PRODUCT&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Clinical Trial cluster -->
+        <mxCell id="trial-node" value="&lt;b&gt;CLINICAL_TRIAL&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;+ Sponsor, Phase,&lt;br&gt;Condition, Intervention&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="380" y="380" width="170" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Patent cluster -->
+        <mxCell id="patent-node" value="&lt;b&gt;PATENT&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;+ Patent_Application&lt;br&gt;+ USPTO_PGPUB&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="380" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Organization -->
+        <mxCell id="org-node" value="&lt;b&gt;ORGANIZATION&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;org_id&lt;br&gt;organization_canonical_name&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="650" y="380" width="170" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- PubMed -->
+        <mxCell id="pubmed-node" value="&lt;b&gt;PUBMED_DOCUMENT&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;+ PUBMED_SUMMARY&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="880" y="380" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Relationships -->
+        <mxCell id="r-indication" style="exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="drug-node" target="disease-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-indication-l" value="indication /&lt;br&gt;contraindication /&lt;br&gt;off-label use" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontStyle=1;" vertex="1" connectable="0" parent="r-indication">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-drug-protein" style="exitX=0.7;exitY=0;exitDx=0;exitDy=0;entryX=0.3;entryY=1;entryDx=0;entryDy=0;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="drug-node" target="protein-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-drug-protein-l" value="drug_protein" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;" vertex="1" connectable="0" parent="r-drug-protein">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-disease-protein" style="exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.7;entryY=1;entryDx=0;entryDy=0;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="disease-node" target="protein-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-disease-protein-l" value="disease_protein" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;" vertex="1" connectable="0" parent="r-disease-protein">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-pathway" style="exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="pathway-node" target="protein-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-pathway-l" value="pathway_protein" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;" vertex="1" connectable="0" parent="r-pathway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-anatomy" style="exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0;entryDx=0;entryDy=0;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="anatomy-node" target="protein-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-anatomy-l" value="anatomy_protein" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;" vertex="1" connectable="0" parent="r-anatomy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-drug-alias" style="exitX=0;exitY=0.3;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="drug-node" target="synonym-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-drug-alias-l" value="has_drug_alias" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#6c8ebf;" vertex="1" connectable="0" parent="r-drug-alias">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-drug-product" style="exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="drug-node" target="product-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-drug-patent" style="exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#d79b00;strokeWidth=1;" edge="1" parent="1" source="drug-node" target="patent-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-drug-patent-l" value="disclosed_in" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#d79b00;" vertex="1" connectable="0" parent="r-drug-patent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-drug-trial" style="exitX=0.7;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=1;" edge="1" parent="1" source="drug-node" target="trial-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-drug-trial-l" value="evaluated_in" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#d6b656;" vertex="1" connectable="0" parent="r-drug-trial">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-drug-pubmed" style="exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="disease-node" target="pubmed-node">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790" y="264" />
+              <mxPoint x="790" y="340" />
+              <mxPoint x="850" y="340" />
+              <mxPoint x="850" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r-drug-pubmed-l" value="featured_in" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#82b366;" vertex="1" connectable="0" parent="r-drug-pubmed">
+          <mxGeometry x="-0.2" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-org-trial" style="exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#9673a6;strokeWidth=1;" edge="1" parent="1" source="org-node" target="trial-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-org-trial-l" value="sponsors" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#9673a6;" vertex="1" connectable="0" parent="r-org-trial">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-drug-effect" style="exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="disease-node" target="phenotype-node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r-drug-effect-l" value="disease_phenotype" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;" vertex="1" connectable="0" parent="r-drug-effect">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r-ppi" style="exitX=0.5;exitY=0;exitDx=0;exitDy=0;strokeColor=#82b366;strokeWidth=1;curved=1;" edge="1" parent="1" source="protein-node" target="protein-node">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="510" y="50" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r-ppi-l" value="protein_protein" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#82b366;" vertex="1" connectable="0" parent="r-ppi">
+          <mxGeometry x="0.3" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Counts Legend -->
+        <mxCell id="counts-legend" value="&lt;b&gt;Current Data&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;• 36 node types (FoundationalNodeEnum)&lt;br&gt;• 27 relationship types (FoundationalRelationshipEnum)&lt;br&gt;• Foundation: Drug, Disease, Gene/Protein, Pathway, Anatomy, ...&lt;br&gt;• Clinical: ClinicalTrial, Sponsor, Phase, Condition, Intervention&lt;br&gt;• Patent: Patent, Patent_Application, USPTO_PGPUB&lt;br&gt;• PubMed: PUBMED_DOCUMENT, PUBMED_SUMMARY&lt;br&gt;• Organization: Organization, Research&lt;br&gt;• GraphRAG: SUMMARY, SUMMARY_FINDING&lt;br&gt;• TPP: CSL_TPP, CSL_TPP_QUESTION&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666;fontSize=11;verticalAlign=top;spacingTop=5;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="380" height="190" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ================================================================ -->
+  <!-- PAGE 3: REQUEST FLOW -->
+  <!-- ================================================================ -->
+  <diagram id="request-flow" name="Request Flow">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="rf-title" value="&lt;b&gt;Eugene — End-to-End Request Flow&lt;/b&gt;&lt;br&gt;User asks: &quot;What drugs treat Hemophilia A?&quot;" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="500" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Steps -->
+        <mxCell id="s1" value="&lt;b&gt;1. User&lt;/b&gt;&lt;br&gt;Types question&lt;br&gt;in Chat UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2" value="&lt;b&gt;2. Streamlit UI&lt;/b&gt;&lt;br&gt;POST /query/stream&lt;br&gt;+ Bearer JWT&lt;br&gt;+ {prompt, tools}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#81C784;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="220" y="100" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3" value="&lt;b&gt;3. Agent WS&lt;/b&gt;&lt;br&gt;Validates JWT&lt;br&gt;Creates EugeneDataAgent&lt;br&gt;Starts Strands ReAct" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#64B5F6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="410" y="100" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s4" value="&lt;b&gt;4. LLM (GPT/Claude)&lt;/b&gt;&lt;br&gt;REASON: &quot;I need to&lt;br&gt;look up Hemophilia A&quot;&lt;br&gt;ACT: call lookup_node" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#CE93D8;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="610" y="100" width="170" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s5" value="&lt;b&gt;5. MCP Server&lt;/b&gt;&lt;br&gt;lookup_node_by_value&lt;br&gt;(&quot;Hemophilia A&quot;)&lt;br&gt;→ HTTP GET to API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#64B5F6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="820" y="100" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s6" value="&lt;b&gt;6. Core API&lt;/b&gt;&lt;br&gt;/node/find/Hemophilia%20A&lt;br&gt;→ FoundationalNodeIdProvider&lt;br&gt;→ Neo4jFoundationalNodeAdapter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FFB74D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="100" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s7" value="&lt;b&gt;7. Neo4j&lt;/b&gt;&lt;br&gt;MATCH (n {node_name:&lt;br&gt;&quot;Hemophilia A&quot;})&lt;br&gt;RETURN n.node_id" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="220" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s8" value="&lt;b&gt;8. Response bubbles back&lt;/b&gt;&lt;br&gt;Neo4j → Adapter → Mapper → Provider → Router&lt;br&gt;{id: &quot;34c734&quot;, value: &quot;Hemophilia A&quot;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#FFE082;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="610" y="230" width="350" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s9" value="&lt;b&gt;9. LLM observes result&lt;/b&gt;&lt;br&gt;OBSERVE: Found node 34c734&lt;br&gt;REASON: Now fetch relationships&lt;br&gt;ACT: call fetch_node_relationships(&quot;34c734&quot;)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#CE93D8;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="220" y="230" width="340" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s10" value="&lt;b&gt;10. MCP → API → Neo4j (again)&lt;/b&gt;&lt;br&gt;MATCH (n {node_id: &quot;34c734&quot;})-[r]-{0,2}(m)&lt;br&gt;Returns: Afstyla→indication→Hemophilia A,&lt;br&gt;Eloctate→indication→Hemophilia A, ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#64B5F6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="220" y="320" width="380" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s11" value="&lt;b&gt;11. LLM generates answer&lt;/b&gt;&lt;br&gt;&quot;The following drugs treat Hemophilia A:&lt;br&gt;1. Afstyla — recombinant Factor VIII&lt;br&gt;2. Eloctate — Factor VIII Fc fusion protein&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="650" y="320" width="310" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s12" value="&lt;b&gt;12. SSE Stream → UI&lt;/b&gt;&lt;br&gt;{type: &quot;content&quot;, content: &quot;The following...&quot;}&lt;br&gt;{type: &quot;done&quot;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#81C784;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="320" width="220" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Flow arrows -->
+        <mxCell id="f1" style="strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="s1" target="s2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f2" style="strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f3" style="strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="s3" target="s4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f4" style="strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="s4" target="s5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f5" style="strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="s5" target="s6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f6" style="strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="s6" target="s7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f7" style="strokeColor=#82b366;strokeWidth=2;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="s7" target="s8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f8" style="strokeColor=#333;strokeWidth=2;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="s8" target="s9"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f9" style="strokeColor=#333;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="s9" target="s10"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f10" style="strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="s10" target="s11"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="f11" style="strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="s11" target="s12"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

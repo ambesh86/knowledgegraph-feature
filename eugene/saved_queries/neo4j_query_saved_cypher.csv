@@ -1,0 +1,576 @@
+name,description,query,id,parentId,isFolder
+find_patents,,,0,,true
+query drug.cypher,,"MATCH (n:drug)-[r]-(n2)
+WHERE n.node_name = 'Alemtuzumab'
+RETURN n",1,,false
+vwd_node_similarity,,,2,,true
+_1_Match_VWD_variants.cypher,,"// [1] Match VWD variants
+MATCH (n:disease)
+WHERE n.node_name = 'von Willebrand disease' OR
+n.node_name = 'pseudo-von Willebrand disease' OR
+n.node_name = 'Von Willebrand disease, X-linked form' OR
+n.node_name = 'hereditary von Willebrand disease' OR
+n.node_name = 'von Willebrand disease (hereditary or acquired)'
+RETURN n",3,2,false
+_3b_node_similarity_filtered_VWD_disease_to_protein_graph.cypher,,"// [3b] node similarity filtered - VWD disease to protein graph
+CALL gds.nodeSimilarity.filtered.stream('diseaseToProteinGraph', {
+    degreeCutoff: 1,
+    similarityCutoff: .1,
+    similarityMetric: ""COSINE"",
+    sourceNodeFilter: [60156, 54134, 73933, 48329, 8332]
+})
+YIELD node1, node2, similarity
+RETURN similarity,
+gds.util.asNode(node1).node_name AS Disease1_Name,
+gds.util.asNode(node2).node_name AS Disease2_Name,
+gds.util.asNode(node1).node_id AS Disease1_Id,
+gds.util.asNode(node2).node_id AS Disease2_Id
+ORDER BY similarity DESCENDING, Disease1_Name, Disease2_Name",4,2,false
+_3c_node_similarity_filtered_VWD_disease_to_protein_graph.cypher,,"// [3c] node similarity filtered - VWD disease to protein graph
+MATCH (n:disease)
+WHERE n.node_name = 'von Willebrand disease' OR
+n.node_name = 'pseudo-von Willebrand disease' OR
+n.node_name = 'Von Willebrand disease, X-linked form' OR
+n.node_name = 'hereditary von Willebrand disease' OR
+n.node_name = 'von Willebrand disease (hereditary or acquired)'
+CALL gds.nodeSimilarity.filtered.stream('diseaseToProteinGraph', {
+    degreeCutoff: 1,
+    similarityCutoff: .1,
+    similarityMetric: ""COSINE"",
+    sourceNodeFilter: [n]
+})
+YIELD node1, node2, similarity
+RETURN similarity,
+gds.util.asNode(node1).node_name AS Disease1_Name,
+gds.util.asNode(node2).node_name AS Disease2_Name,
+gds.util.asNode(node1).node_id AS Disease1_Id,
+gds.util.asNode(node2).node_id AS Disease2_Id
+ORDER BY similarity DESCENDING, Disease1_Name, Disease2_Name",5,2,false
+_4_verify_blood_platelet_related_diseases.cypher,,"// [4] verify - blood platelet related diseases
+MATCH (n:disease)-[r]-(p:gene_protein)
+WHERE n.node_id = '24574' or
+n.node_id = '7930' or
+n.node_id = '8332' or
+n.node_id = '9276' or 
+n.node_id = '1197' or
+n.node_id = '8853' or
+n.node_id = '11512' or
+n.node_id = '2907_2692' or
+n.node_id = '19415' or
+n.node_id = '24277'
+RETURN n, r, p",6,2,false
+_4_verify_higher_threshold_blood_platelet_related_diseases.cypher,,"// [4] verify - higher threshold blood platelet related diseases 
+MATCH (n:disease)-[r]-(p:gene_protein)
+WHERE n.node_id = '24574' or
+n.node_id = '7930' or
+n.node_id = '8332' or
+n.node_id = '9276' or 
+n.node_id = '1197'
+RETURN n, r, p",7,2,false
+_4b_verify_VWF_related_diseases.cypher,,"// [4b] verify - VWF related diseases
+MATCH (n:disease)-[r]-(p:gene_protein)
+WHERE n.node_id = '8668_13304_10191_15628_15629_15630_15631' or n.node_id = '2907_2692'
+RETURN n, r, p",8,2,false
+sample_adamic_adar_link_predict.cypher,,"// sample adamic adar link predict
+MATCH (d1:disease { node_index: '39535'})
+MATCH (d2:disease { node_index: '27581'})
+RETURN gds.alpha.linkprediction.adamicAdar(d1, d2) AS score
+",9,2,false
+node_simiarity,,,10,,true
+_1_project_disease_to_protein_graph.cypher,,"// [1] project - disease to protein graph
+MATCH (source:disease)
+OPTIONAL MATCH (source)-[r:disease_protein]-(target:gene_protein)
+RETURN gds.graph.project(
+  'diseaseToProteinGraph',
+  source,
+  target,
+  { relationshipProperties: r { strength: 1 } }
+)",11,10,false
+_2_estimate_disease_to_protein_graph.cypher,,"// [2] estimate - disease to protein graph
+CALL gds.nodeSimilarity.write.estimate('diseaseToProteinGraph', {
+  writeRelationshipType: 'SIMILAR',
+  writeProperty: 'score'
+})
+YIELD nodeCount, relationshipCount, bytesMin, bytesMax, requiredMemory",12,10,false
+_3_node_similarity_disease_to_protein_graph.cypher,,"// [3] node similarity - disease to protein graph
+CALL gds.nodeSimilarity.stream('diseaseToProteinGraph')
+YIELD node1, node2, similarity
+RETURN gds.util.asNode(node1).node_name AS Disease1, gds.util.asNode(node2).node_name AS Disease2, similarity
+ORDER BY similarity DESCENDING, Disease1, Disease2",13,10,false
+_4_verify_high_similarity_score_low_cardinality.cypher,,"// [4] verify - high similarity score low cardinality
+MATCH (n:disease)-[r]-(p:gene_protein)
+WHERE n.node_id = '14822' or n.node_id = '10970'
+RETURN n, r, p",14,10,false
+_5_verify_mid_similarity_score.cypher,,"// [5] verify - mid similarity score
+MATCH (n:disease)-[r]-(p:gene_protein)
+WHERE n.node_id = '8853' or n.node_id = '9276' or n.node_id = '1197'
+RETURN n, r, p",15,10,false
+wide_net,,,16,,true
+community_1.cypher,,"// community 1
+    WITH ['59745','12535','9933','13671','12165','57799','1416','34075','12074','34407','33907','57844','4420','56526','58774','10817','11534','5497','6911','10167','83721','58086','57355','7323','10486','12844','5303','56576','11021','12364','7505','58623','60444','34677','3941','34730','1098','7795','7199','4732','12720','2370','83701','60498','33915','5056','57113','60774','9549','13018','13674','10130','34692','35224','77372','4965','7706','1889','58081','11335','6234','13175','11449','12296','1892','59532'] AS ids
+    UNWIND ids AS id
+    MATCH (n)
+    WHERE n.node_index = id
+    RETURN n",17,16,false
+community_2.cypher,,"// community 2
+    WITH ['59684','8248','7358','12066','1366','12021','9535','13211','13805','1722','57043','9485','7214','56811','6762','11366','5137','2884','4432','6496','13853','13369','57034','3331','12255','7623','3867','2271','1452','3513','12222','35126','8472','6595','8751','57060','34186','57183','12638','6324','12377','10506','9714','5792','4992','7579','5029','1694','8039','287','6815','7558','7162','4063','13809','57017','4589','9872','1447'] AS ids
+    UNWIND ids AS id
+    MATCH (n)
+    WHERE n.node_index = id
+    RETURN n",18,16,false
+community_3.cypher,,"// community 3
+    WITH ['3039','4933','660','1487','2137','827','11471','1621','1454','4046','59268','327','932','2460','12947','6294','6884','2547','2479','10440','717','1051','1778','4869','590','5054','83696','5504','3639','6384','1809','11','7352','2568','860','703','58340','885','12820','4519','7423','8714','1164','2572','8842','3467','57917','1512','59','4789','1729','84','848','1948','10156','7440','4967','7576','13468','765','6286','9390','905','889','3054','9289','3151','3217','1373','11462','917','2162','59504','231','1490','1187','11879','10572','59353','3225','2831','3714','383','1612'] AS ids
+    UNWIND ids AS id
+    MATCH (n)
+    WHERE n.node_index = id
+    RETURN n",19,16,false
+sample_1m_community.cypher,,"// sample 1m community
+WITH ['5793','60231','5376','19592','12050','12481','57167','513','4749','4325','5715','8656','5621','11357','9183','12723','9345','8234','6184','4821','57622','914','56797','3968','3341','1464','8871','5532','13540','10974','1653','3927','514','12557','7070'] AS ids
+UNWIND ids AS id
+MATCH (n)
+WHERE n.node_index = id
+RETURN n",20,16,false
+Sample_gene_protein_community.cypher,,"// Sample gene_protein community
+MATCH (n)
+WHERE n.node_index = '3941' OR n.node_index = '10817' OR n.node_index = '1889'
+RETURN n",21,16,false
+simple_query_community_of_nodes_by_id.cypher,,"// simple query community of nodes by id
+WITH ['3941', '10817', '1889'] AS ids
+UNWIND ids AS id
+MATCH (n)
+WHERE n.node_index = id
+RETURN n",22,16,false
+drug_metadata,,,23,,true
+copper_drug_node.cypher,,"// copper drug node
+MATCH(n:drug { node_index: '14012' })
+RETURN n",24,23,false
+delete_node_by_id_if_we_merge_create_a_new_one_acciedently.cypher,,"// delete node by id, if we merge/create a new one acciedently
+MATCH(n:drug)
+WHERE ID(n) = 114597
+DETACH DELETE n
+RETURN n",25,23,false
+modify_drug_metadata.cypher,,"// modify drug metadata
+WITH [
+    {
+        node_index: ""14012"",
+        description: ""Copper is a transition metal and a trace element in the body. It is important to the function of many enzymes including cytochrome c oxidase, monoamine oxidase and superoxide dismutase. Copper is commonly used in contraceptive intrauterine devices (IUD)."",
+        half_life: """",
+        indication: ""For use in the supplementation of total parenteral nutrition and in contraception with intrauterine devices."",
+        mechanism_of_action: ""Copper is absorbed from the gut via high affinity copper uptake protein and likely through low affinity copper uptake protein and natural resistance-associated macrophage protein-2. It is believed that copper is reduced to the Cu1+ form prior to transport. Once inside the enterocyte, it is bound to copper transport protein ATOX1 which shuttles the ion to copper transporting ATPase-1 on the golgi membrane which take up copper into the golgi apparatus. Once copper has been secreted by enterocytes into the systemic circulation it remain largely bound by ceruloplasmin (65-90%), albumin (18%), and alpha 2-macroglobulin (12%). "",
+        protein_binding: ""Copper is nearly entirely bound by ceruloplasmin (65-90%), plasma albumin (18%), and alpha 2-macroglobulin (12%)."",
+        pharmacodynamics: ""Copper is incorporated into many enzymes throughout the body as an essential part of their function. Copper ions are known to reduce fertility when released from copper-containing IUDs."",
+        state: ""Copper is a solid."",
+        atc_1: """",
+        atc_2: """",
+        atc_3: """",
+        atc_4: """",
+        category: ""Copper is part of Copper-containing Intrauterine Device ; Decreased Embryonic Implantation ; Decreased Sperm Motility ; Diet, Food, and Nutrition ; Elements ; Food ; Food and Beverages ; Growth Substances ; Inhibit Ovum Fertilization ; Metals ; Metals, Heavy ; Micronutrients ; Minerals ; Physiological Phenomena ; Replacement Preparations ; Trace Elements ; Transition Elements."",
+        group: ""Copper is approved and investigational."",
+        pathway: """",
+        molecular_weight: """",
+        tpsa: """",
+        clogp: """"
+    }
+] AS drug_nodes
+CALL apoc.periodic.iterate(
+""
+    UNWIND $drug_nodes as row
+    MATCH (d:drug { node_index: row.node_index })
+    RETURN row, d
+"",
+"" 
+    SET d.description = row.description
+    SET d.half_life = row.half_life
+    SET d.indication = row.indication
+    SET d.mechanism_of_action = row.mechanism_of_action 
+    SET d.protein_binding = row.protein_binding
+    SET d.pharmacodynamics = row.pharmacodynamics
+    SET d.state = row.state 
+    SET d.atc_1 = row.atc_1
+    SET d.atc_2 = row.atc_2
+    SET d.atc_3 = row.atc_3
+    SET d.atc_4 = row.atc_4
+    SET d.category = row.category
+    SET d.group = row.group
+    SET d.pathway = row.pathway
+    SET d.molecular_weight = row.molecular_weight
+    SET d.tpsa = row.tpsa
+    SET d.clogp = row.clogp
+    RETURN d
+"",
+{batchSize:1000, parallel:true, params: { drug_nodes: drug_nodes } })
+YIELD batches, total, errorMessages
+RETURN batches, total, errorMessages",26,23,false
+mullerian_disease_node.cypher,,"// mullerian disease node
+MATCH(n:disease { node_index: '27165'})
+RETURN n",27,23,false
+sample_drug_node.cypher,,"// sample drug node
+MATCH(n:drug)
+WHERE n.node_index = '21106' or
+n.node_index = '20947' or
+n.node_index = '14012' or
+n.node_index = '14015' or
+n.node_index = '14018' or
+n.node_index = '14034' or
+n.node_index = '14115' or
+n.node_index = '14272' or
+n.node_index = '14419'
+RETURN n",28,23,false
+target_queries,,,29,,true
+Crohn_disease.cypher,,"// Crohn disease
+MATCH(n:disease {node_name: ""Crohn disease""})
+RETURN n",30,29,false
+Crohn_s_colitis.cypher,,"// Crohn's colitis
+MATCH(n:disease {node_name: ""Crohn's colitis""})
+RETURN n",31,29,false
+disease_lupus_erythematosus_with_paths.cypher,,"// disease: lupus erythematosus with paths  
+MATCH (n:disease { node_name: ""lupus erythematosus"" })
+match path=(n)-[*..3]-(c)
+return path LIMIT 100000",32,29,false
+drug_Cyclophosphamide.cypher,,"// drug: Cyclophosphamide 
+MATCH (n:drug { node_name: ""Cyclophosphamide"" }) match path=(n)-[*..1]-(c) return path LIMIT 30",33,29,false
+drug_Cyclophosphamide_community_1.cypher,,"//drug: Cyclophosphamide community 1
+WITH ['22193','32380','14181','14297','18756','14419','15150','14218','32859','84526','14815','15322','29592','27198','20656','20227','14210','29352','28853','33298'] AS ids
+UNWIND ids AS id
+MATCH (n)
+WHERE n.node_index = id
+RETURN n",34,29,false
+drug_Cyclophosphamide_community_2.cypher,,"//drug: Cyclophosphamide community 2
+WITH ['15242','15241','15515','15191','14171','1661','14451','14966','12431','15620','14818','15741','12856','3552','15604','123463','15230','14607','15098','15053','3785','113989','15839','84094','12064','128119','15228','15057','15719','15302','15675','14349','54290','14376','15160','7833','15833','15437','15837','15195','14281','15319','83841','15181','14950','15268','15549','14352','36043','40112','15430','11369','14661','128125','15516','13313','15231','15020','10320','2981','15513','39964','15137','33916','14505','15445','38957','15085','15043','15566','83923','15054','14048','36040','54077','123462','15559','14493','14370','15249','35966','15297','83924'] AS ids
+UNWIND ids AS id
+MATCH (n)
+WHERE n.node_index = id
+RETURN n",35,29,false
+lupus_cluster_1.cypher,,"// lupus cluster 1
+WITH ['7792','30089','7457','22560','84773','85245','23214','94319','25513','85270','85524','31675','85389','24143','85238','85244','85390','86169','24199','23973','39457','85568','28479','35448','85236','85237'] AS ids
+UNWIND ids AS id
+MATCH (n)
+WHERE n.node_index = id
+RETURN n",36,29,false
+lupus_cluster_3.cypher,,"// lupus cluster 3
+WITH ['22852','89987','32190','85550','86141','23011','38343','85356','23162','26760','23296','23901','94135','25746','23284','22934','88592','23544','22952','24484','39035','86257'] AS ids
+UNWIND ids AS id
+MATCH (n)
+WHERE n.node_index = id
+RETURN n",37,29,false
+lupus_cluster_4.cypher,,"// lupus cluster 4
+WITH ['39705','37689','37719','35743','29990','37584','28478','33134','36293','32143','97070','30256','31774','61709','22497','37700','37866','14629','14389','62176','96873','61785','20303','37163','95619','15461','22759','37698','37704','14042','14726','39159','14132','95591','98584','28585','38961','37791'] AS ids
+UNWIND ids AS id
+MATCH (n)
+WHERE n.node_index = id
+RETURN n",38,29,false
+lupus_cluster_4_community_for_lung_disease.cypher,,"// lupus cluster 4 - community for lung disease
+WITH ['39705','37689','37719','35743','29990','37584','28478','33134','36293','32143','97070','30256','31774','61709','22497','37700','37866','14629','14389','62176','96873','61785','20303','37163','95619','15461','22759','37698','37704','14042','14726','39159','14132','95591','98584','28585','38961','37791'] AS ids
+UNWIND ids AS id
+MATCH (n)
+WHERE n.node_index = id
+RETURN n",39,29,false
+lupus_cluster_5_community_around_hormones_deficiency.cypher,,"// lupus cluster 5 - community around hormones deficiency
+WITH ['14980','18229','15143','17417','33232','20889','17545','15178','14395','15662','16962','15380','14616','17535','15026','14460','20718','15736','20533','20996','20403','14027','17103','14657','20961','16365','15591','14033','14284','15186','21655','16437','20850','15163','20858','15302','14214','15029','15698','14504','20942','15788','15293','15988','20186','14612','14325','20663','21408','20880','20917','17076','14926','20736','31714','15045','17422','15601','20573','15325','15507','14387','16758','16232','20733','20756','14740','14060','17561','15690','19665','18611','16031','14870','20904','20926','20676','14831','20902','14695','20916','15327','32905','15263','15414','17565','16530','18157','15627','17332','15187','16008','15108','20944','20875','17396','20861','15227','21393','84429','37285','15326','15149','15375','15597','20441','14643','20838','17780','15558','14497','16757','17560','15984','14449','20680','19250','15366','14990','14613','20939','85334','36924','15572','20868','14857'] AS ids
+UNWIND ids AS id
+MATCH (n)
+WHERE n.node_index = id
+RETURN n",40,29,false
+lupus_erythematosus_disease.cypher,,"// lupus erythematosus disease
+MATCH(n:disease {node_name: ""lupus erythematosus""})
+RETURN n",41,29,false
+Match_FOXP_transciptomics_protein.cypher,,"// Match FOXP transciptomics protein
+MATCH (n:gene_protein { node_name: 'FOXP3'})
+RETURN n",42,29,false
+tpp,,,43,,true
+delete_all_csl_tpp_and_relationships.cypher,,"// delete all csl tpp and relationships
+MATCH p=(n:csl_tpp)-[]-(n2)
+delete p",44,43,false
+query_for_patents_related_to_a_given_csl_tpp.cypher,,"// query for patents related to a given csl tpp
+MATCH (n:csl_tpp { node_id: 'dd485875e4b59bc35883471d7fc9f01d' })
+CALL db.index.vector.queryNodes('pgpub_embeddings_index', 200, n.embeddings)
+YIELD node, score
+RETURN score, n.product_description as tpp_description, node.application_number_text as patent_application_no, node.abstract as patent_abstract, node.claims as patent_claims;",45,43,false
+drug_discovery,,,46,,true
+drug_to_lupus_relationship.cypher,,"// drug to lupus relationship
+MATCH (drg:drug) - [r:drug_protein] - (p1:gene_protein) - [r2:disease_protein] - (dse:disease)
+    WHERE dse.node_name =~ '(?i).*lupus.*'
+RETURN drg, p1, dse",47,46,false
+find_Hydroxychloroquine_to_disease_relationship.cypher,,"//find - Hydroxychloroquine to disease relationship
+MATCH (drg:drug) - [r:drug_protein] - (p1:gene_protein) - [r2:disease_protein] - (dse:disease)
+    WHERE drg.node_name =~ '(?i).*Hydroxychloroquine.*'
+RETURN drg, p1, dse",48,46,false
+match_nodes_for_lupus_and_ae_941.cypher,,"// match nodes for lupus and ae-941
+MATCH(n1 {node_index: '29182'})
+MATCH(n2 { node_index: '83939'})
+RETURN n1, n2",49,46,false
+match_path_for_lupus_and_ae_941.cypher,,"// match path for lupus and ae-941
+MATCH p=(n1 {node_index: '94775'})-[r1]-(p1:gene_protein)-[r2]-(n2 {node_index: '16198'})
+RETURN p",50,46,false
+node_similarity_filtered_Hydroxychloroquin.cypher,,"//node similarity filtered - Hydroxychloroquin
+MATCH (drg:drug) - [r:drug_protein] - (p1:gene_protein) - [r2:disease_protein] - (dse:disease)
+    WHERE drg.node_name =~ '(?i).*Hydroxychloroquine.*'
+CALL gds.nodeSimilarity.filtered.stream('diseaseToProteinGraph', {
+    degreeCutoff: 1,
+    similarityCutoff: .1,
+    similarityMetric: ""COSINE"",
+    sourceNodeFilter: [dse]
+})
+YIELD node1, node2, similarity
+RETURN similarity,
+gds.util.asNode(node1).node_name AS Disease1_Name,
+gds.util.asNode(node2).node_name AS Disease2_Name,
+gds.util.asNode(node1).node_id AS Disease1_Id,
+gds.util.asNode(node2).node_id AS Disease2_Id
+ORDER BY similarity DESCENDING, Disease1_Name, Disease2_Name",51,46,false
+node_similarity_filtered_lupus.cypher,,"//node similarity filtered - lupus
+MATCH (dse:disease) - [r2:disease_protein] - (p1:gene_protein) - [r:drug_protein] - (drg:drug)
+    WHERE dse.node_name =~ '(?i).*lupus.*'
+CALL gds.nodeSimilarity.filtered.stream('genes_drugs_diseases', {
+    degreeCutoff: 3,
+    similarityCutoff: .5,
+    topN: 3,
+    topK: 5,
+    similarityMetric: ""COSINE"",
+    sourceNodeFilter: [dse],
+    targetNodeFilter: [drg],
+    relationshipTypes: ['drug_protein', 'disease_protein']
+})
+YIELD node1, node2, similarity
+RETURN similarity,
+gds.util.asNode(node1).node_name AS Disease1_Name,
+gds.util.asNode(node2).node_name AS Disease2_Name,
+gds.util.asNode(node1).node_index AS Disease1_Index,
+gds.util.asNode(node2).node_index AS Disease2_Index
+ORDER BY similarity DESCENDING, Disease1_Name, Disease2_Name",52,46,false
+node_similarity_filtered_lupus2.cypher,,"//node similarity filtered - lupus2
+MATCH (drg:drug) - [r:drug_protein] - (p1:gene_protein) - [r2:disease_protein] - (dse:disease)
+    WHERE dse.node_name =~ '(?i).*lupus.*'
+CALL gds.nodeSimilarity.filtered.stream('genes_drugs_diseases', {
+    degreeCutoff: 3,
+    similarityCutoff: .5,
+    topN: 3,
+    topK: 5,
+    similarityMetric: ""COSINE"",
+    sourceNodeFilter: [dse],
+    targetNodeFilter: [drg],
+    relationshipTypes: ['drug_protein', 'disease_protein']
+})
+YIELD node1, node2, similarity
+RETURN similarity,
+gds.util.asNode(node1).node_name AS Disease1_Name,
+gds.util.asNode(node2).node_name AS Disease2_Name,
+gds.util.asNode(node1).node_index AS Disease1_Index,
+gds.util.asNode(node2).node_index AS Disease2_Index
+ORDER BY similarity DESCENDING, Disease1_Name, Disease2_Name",53,46,false
+node_similarity_filtered_by_vwd.cypher,,"//node similarity filtered by vwd
+MATCH (dse:disease) - [r2:disease_protein] - (p1:gene_protein) - [r:drug_protein] - (drg:drug)
+    WHERE dse.node_name = 'von Willebrand disease' OR
+            dse.node_name = 'pseudo-von Willebrand disease' OR
+            dse.node_name = 'Von Willebrand disease, X-linked form' OR
+            dse.node_name = 'hereditary von Willebrand disease' OR
+            dse.node_name = 'von Willebrand disease (hereditary or acquired)'
+CALL gds.nodeSimilarity.filtered.stream('genes_drugs_diseases', {
+    degreeCutoff: 1,
+    similarityCutoff: .1,
+    topN: 10,
+    topK: 10,
+    similarityMetric: ""COSINE"",
+    sourceNodeFilter: [dse],
+    targetNodeFilter: [drg],
+    relationshipTypes: ['drug_protein', 'disease_protein']
+})
+YIELD node1, node2, similarity
+RETURN similarity,
+gds.util.asNode(node1).node_name AS Disease1_Name,
+gds.util.asNode(node2).node_name AS Disease2_Name,
+gds.util.asNode(node1).node_index AS Disease1_Index,
+gds.util.asNode(node2).node_index AS Disease2_Index
+ORDER BY similarity DESCENDING, Disease1_Name, Disease2_Name",54,46,false
+graphrag,,,55,,true
+pubmed_at_least_1_summary.cypher,,"// pubmed at least 1 summary
+MATCH (doc:pubmed_document)
+WHERE COUNT { (doc)-[:has_summary]->(:pubmed_summary) } > 1
+RETURN doc",56,55,false
+pubmed_extraction_count.cypher,,"// pubmed extraction count
+MATCH (doc:pubmed_document)-[extraction:has_extraction]-()
+RETURN doc.pmcid, COUNT(extraction) as count ORDER BY count DESC",57,55,false
+pubmed_level_4_summaries.cypher,,"// pubmed level 4 summaries
+MATCH path=(doc:pubmed_document { pmcid: '11788946'})-[rel:has_summary]-(summary:pubmed_summary { level: 4})
+RETURN path",58,55,false
+pubmed_with_extractions_gvhd.cypher,,"// pubmed with extractions gvhd 
+MATCH path=(doc:pubmed_document {pmcid: '11781120'})-[rel:has_extraction]-()
+RETURN path",59,55,false
+pubmed_with_summaries.cypher,,"// pubmed with summaries
+MATCH path=(doc:pubmed_document {pmcid: '11782851'})-[rel:has_summary]-()
+RETURN path",60,55,false
+pubmed_with_summaries_gvhd.cypher,,"// pubmed with summaries gvhd 
+MATCH path=(doc:pubmed_document {pmcid: '11781120'})-[rel:has_summary]-()
+RETURN path",61,55,false
+_stream_degree.cypher,," // stream degree
+ CALL gds.graph.nodeProperty.stream('diseaseToProteinNoPropertiesGraph', 'degree')
+YIELD nodeId, propertyValue
+RETURN gds.util.asNode(nodeId).node_name AS name, propertyValue AS degree
+ORDER BY degree DESC",62,,false
+visualize_schema.cypher,,"// visualize schema
+CALL db.schema.visualization()
+",63,,false
+CALL_gds_graph_nodeProperty_stream_diseaseToProtein_fastrp_embedding_disease_gene_protein.cypher,,"CALL gds.graph.nodeProperty.stream('diseaseToProtein', 'fastrp-embedding', ['disease', 'gene_protein'])
+YIELD nodeId, propertyValue
+RETURN gds.util.asNode(nodeId).node_name AS name, propertyValue AS ""fastrpembedding""
+ORDER BY name ASC",64,,false
+Count_nodes.cypher,,"// Count nodes
+MATCH (n)
+RETURN count(n) as count",65,,false
+Delete_All.cypher,,"// Delete All
+MATCH (n)
+DETACH DELETE n",66,,false
+drop_graph_projection.cypher,,"// drop graph projection
+CALL gds.graph.drop(""diseaseToProteinGraph"")",67,,false
+graph_density.cypher,,"// graph density
+CALL apoc.meta.stats() YIELD nodeCount, relCount
+RETURN toFloat(relCount) / (nodeCount * (nodeCount - 1)) as density",68,,false
+link_prediction_with_fastrp_guide.cypher,,"// link prediction with fastrp guide
+:play http://localhost:8000/play.html",69,,false
+list_connections.cypher,,"// list connections
+call dbms.listConnections",70,,false
+list_graphs.cypher,,"// list graphs
+CALL gds.graph.list()
+YIELD graphName, nodeCount, relationshipCount
+RETURN graphName, nodeCount, relationshipCount
+ORDER BY graphName ASC",71,,false
+list_indexes.cypher,,"// list indexes
+SHOW INDEXES
+YIELD id, name
+ORDER BY id",72,,false
+list_models.cypher,,"// list models
+CALL gds.model.list()
+YIELD modelName, modelType, modelInfo, loaded, stored, published",73,,false
+list_pipelines.cypher,,"// list pipelines
+CALL gds.pipeline.list()",74,,false
+list_queries.cypher,,"// list queries
+SHOW TRANSACTIONS",75,,false
+list_query_runtimes.cypher,,"// list query runtimes
+SHOW TRANSACTIONS YIELD transactionId, runtime, currentQueryElapsedTime ORDER BY transactionId
+RETURN transactionId, runtime, currentQueryElapsedTime",76,,false
+list_relationships.cypher,,"// list relationships
+CALL db.relationshipTypes()
+YIELD relationshipType
+RETURN relationshipType
+ORDER BY relationshipType",77,,false
+MATCH_n_csl_tpp_RETURN_n_LIMIT_25.cypher,,MATCH (n:csl_tpp) RETURN n LIMIT 25,78,,false
+MATCH_n_intervention_return_count_n.cypher,,MATCH (n:intervention) return count(n);,79,,false
+Match_hemophilia_variants.cypher,,"// Match hemophilia variants
+MATCH (dse:disease)
+WHERE dse.node_name =~ '(i?).*hemophilia.*'
+RETURN dse",80,,false
+Match_nodes.cypher,,"// Match nodes
+MATCH (n)
+RETURN n",81,,false
+Match_relationships.cypher,,"// Match relationships
+MATCH p=(n1)-[r]->(n2)
+RETURN p",82,,false
+modify_community_of_nodes_by_id.cypher,,"// modify community of nodes by id
+WITH [11536, 12195, 8763] AS ids
+CALL apoc.periodic.iterate(
+'
+    UNWIND $ids as id
+    RETURN id
+',
+'  MATCH (n)
+    WHERE n.node_index = id
+    RETURN n
+',
+{batchSize:1000, parallel:true, params: { ids: ids} })
+YIELD batches, total, errorMessages
+RETURN batches, total, errorMessages",83,,false
+play_graphsage_guide.cypher,,"// play graphsage guide
+:play http://localhost:8000/graphsage/play.html",84,,false
+project_protein_graph.cypher,,"// project protein graph
+MATCH (source:gene_protein)
+OPTIONAL MATCH (source:gene_protein)-[r:protein_protein]->(target:gene_protein)
+RETURN gds.graph.project(
+  'persons',
+  source,
+  target,
+  {
+    sourceNodeLabels: labels(source),
+    targetNodeLabels: labels(target),
+    sourceNodeProperties: source { .node_name },
+    targetNodeProperties: target { .node_name },
+    relationshipType: type(r),
+    relationshipProperties: r { .relWeight }
+  },
+  { undirectedRelationshipTypes: ['drug_protein', 'protein_protein'] }
+)",85,,false
+pubmed_with_summaries.cypher,,"// pubmed with summaries
+MATCH path=(doc:pubmed_document {pmcid: '11788946', level: 2})-[rel:has_summary]-()
+RETURN path",86,,false
+Relationship_types.cypher,,"// Relationship types
+CALL db.relationshipTypes()",87,,false
+Show_protein_relationships.cypher,,"// Show protein relationships
+MATCH p=(n1)-[r:protein_protein]->(n2)
+RETURN p",88,,false
+show_relationships.cypher,,"// show relationships
+CALL db.relationshipTypes()
+YIELD relationshipType
+RETURN relationshipType
+ORDER BY relationshipType",89,,false
+Untitled_favorite.cypher,,"// Untitled favorite
+",90,,false
+explain-find-patents,,"EXPLAIN MATCH (n:drug)-[r]-(n2:Patent_Application)
+WHERE n.node_id = 'DB00993'
+RETURN n, r, n2 
+SKIP 75
+LIMIT 250",91,0,false
+find patent.cypher,,"MATCH (n:drug)-[r]-(n2:Patent_Application)
+WHERE n.node_id = 'DB00993'
+RETURN n, r, n2 
+SKIP 75
+LIMIT 250",92,0,false
+count_drug_to_patents.cypher,,"MATCH (n:drug)-[r]-(n2:Patent_Application)
+WHERE n.node_id = 'DB00993'
+RETURN count(distinct n2.patent_id)",93,0,false
+find_patents_by_regex.cypher,,"MATCH (n:drug)-[r]-(n2:Patent_Application)
+WHERE n.node_name =~ '(?i).*AZAthioPRINE.*'
+RETURN n, r, n2 
+SKIP 75
+LIMIT 25",94,0,false
+investigational-drug-patents.cypher,,"MATCH (n:`drug`)-[r]-(n2:`Patent_Application`)
+            WHERE n.node_name =~ '(?i).*pruvanserin.*'
+            RETURN n.node_id as drug_id, n.node_name as drug_name, n2.patent_id as patent_id
+            ORDER BY patent_id DESC
+            SKIP 0
+            LIMIT 25",95,0,false
+count-nct-to-patent-relationships,,"MATCH (ct:`ClinicalTrial`)-[r:`supports_patent_application`]-(p:`Patent_Application`)
+RETURN COUNT(r)",96,0,false
+count-drug-to-patent-rels,,"MATCH (ct:`drug`)-[r:`disclosed_in`]-(p:`Patent_Application`)
+RETURN COUNT(r)",97,0,false
+clincal_trail_to_patent_1,,"MATCH (ct:`ClinicalTrial`)-[r:`supports_patent_application`]-(p:`Patent_Application`)
+WHERE ct.nct_id = ""NCT00651885"" AND p.patent_id in [9550716, 9255064, 20160152548, 20150166503, 10155716, 20160318844]
+RETURN ct, r, p",98,0,false
+gene-to-patents.cypher,,"MATCH (g:gene_protein)-[r]-(n2:Patent_Application|Approved_Patent)
+WHERE g.node_name = 'ABL1'
+RETURN g, r, n2",99,0,false
+Count_Theraputic_Areas,,"MATCH (n:ClinicalTrial) RETURN COUNT(DISTINCT(n.therapeutic_area)) as theraputic_area, COUNT(DISTINCT(n.therapeutic_subgroup)) as theraputic_group",100,,false
+List_Theraputic_Areas,,"MATCH (n:ClinicalTrial) RETURN DISTINCT(n.therapeutic_area) as theraputic_area, n.therapeutic_subgroup as theraputic_group
+ORDER BY theraputic_area",101,,false
+Patent_min_max_filing_date,,MATCH (n:drug) RETURN count(distinct(n)),102,,false
+set_missing_disease_fields,,"MATCH (d1:disease)
+WHERE d1.node_id is NULL AND d1.mondo_id is not NULL
+SET d1.node_id = d1.mondo_id
+RETURN d1",103,,false
+drug_count_per_patents,,"MATCH (p:Patent_Application)-[r]-(n2:drug)
+WITH count(distinct n2.node_id) as drug_count, p, r, n2
+WHERE drug_count > 1
+RETURN p, r, n2",104,,false
+presentation,,,105,,true
+slide1,,"MATCH (g:gene_protein)-[r]-(end:`drug`)
+WHERE g.node_name = 'ABL1'
+RETURN g, r, end",106,105,false
+slide2,,"MATCH (g:gene_protein)-[r]-(end:`Research`)
+WHERE g.node_name = 'ABL1'
+RETURN g, r, end",107,105,false
+slide3,,"MATCH (g:gene_protein)<-[r1:patent_app_target]-(p:Approved_Patent|Patent_Application)
+WHERE g.node_name = ""F2""
+OPTIONAL MATCH (g)-[r1]-(p)-[r2]-(o:Organization)
+WITH g, COLLECT(r1)[..4] AS limitedPatentRelationships, COLLECT(p)[..4] AS limitedPatents, r2, o
+RETURN g, limitedPatentRelationships, limitedPatents, r2, o",108,105,false
+slide4,,"MATCH (g:gene_protein)-[rct]-(ct:`ClinicalTrial`)-[r2]-(end:drug|Organization)
+WHERE g.node_name = 'ABL1'
+return g, rct, ct, r2, end",109,105,false

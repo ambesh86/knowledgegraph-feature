@@ -1,0 +1,12 @@
+# Rename this file to backend.tf after creating the S3 bucket + DDB table.
+# Or keep state local for an initial spike — Terraform defaults to local state.
+
+terraform {
+  backend "s3" {
+    bucket         = "your-tf-state-bucket"
+    key            = "eugene-fresh/us-east-1/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "your-tf-state-locks"
+  }
+}

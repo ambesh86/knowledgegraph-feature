@@ -1,0 +1,8 @@
+[run]
+omit =
+  */*_test.py
+  */conftest.py
+
+[report]
+include_namespace_packages = true
+skip_empty = false

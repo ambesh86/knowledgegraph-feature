@@ -1,0 +1,33 @@
+DROP INDEX rel_anatomy_anatomy_index IF EXISTS;
+DROP INDEX rel_anatomy_protein_absent_index IF EXISTS;
+DROP INDEX rel_anatomy_protein_present_index IF EXISTS;
+DROP INDEX rel_bioprocess_bioprocess_index IF EXISTS;
+DROP INDEX rel_bioprocess_protein_index IF EXISTS;
+DROP INDEX rel_cellcomp_cellcomp_index IF EXISTS;
+DROP INDEX rel_cellcomp_protein_index IF EXISTS;
+DROP INDEX rel_contraindication_index IF EXISTS;
+DROP INDEX rel_disease_disease_index IF EXISTS;
+DROP INDEX rel_disease_phenotype_negative_index IF EXISTS;
+DROP INDEX rel_disease_phenotype_positive_index IF EXISTS;
+DROP INDEX rel_disease_protein_index IF EXISTS;
+DROP INDEX rel_drug_drug_index IF EXISTS;
+DROP INDEX rel_drug_effect_index IF EXISTS;
+DROP INDEX rel_drug_protein_index IF EXISTS;
+DROP INDEX rel_exposure_bioprocess_index IF EXISTS;
+DROP INDEX rel_exposure_cellcomp_index IF EXISTS;
+DROP INDEX rel_exposure_disease_index IF EXISTS;
+DROP INDEX rel_exposure_exposure_index IF EXISTS;
+DROP INDEX rel_exposure_molfunc_index IF EXISTS;
+DROP INDEX rel_exposure_protein_index IF EXISTS;
+DROP INDEX rel_indication_index IF EXISTS;
+DROP INDEX rel_molfunc_molfunc_index IF EXISTS;
+DROP INDEX rel_molfunc_protein_index IF EXISTS;
+DROP INDEX `rel_off-label use_index` IF EXISTS;
+DROP INDEX rel_pathway_pathway_index IF EXISTS;
+DROP INDEX rel_pathway_protein_index IF EXISTS;
+DROP INDEX rel_phenotype_phenotype_index IF EXISTS;
+DROP INDEX rel_phenotype_protein_index IF EXISTS;
+DROP INDEX rel_protein_protein_index IF EXISTS;
+
+// clinical trials
+DROP INDEX rel_studies_index IF EXISTS;

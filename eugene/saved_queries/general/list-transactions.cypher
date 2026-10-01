@@ -1,0 +1,2 @@
+// list queries
+SHOW TRANSACTIONS

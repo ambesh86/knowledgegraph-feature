@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph "What the user sees"
+        UI["Chat UI<br><i>Streamlit</i><br>Port 8501"]
+    end
+
+    subgraph "AI Layer"
+        AGENT["Agent Backend<br><i>FastAPI + Strands</i><br>Port 8001<br>Runs GPT/Claude"]
+        MCP["MCP Tool Server<br><i>FastMCP</i><br>Port 8443<br>12 tools"]
+    end
+
+    subgraph "Data Layer"
+        API["Core API<br><i>FastAPI</i><br>Port 8000<br>20 endpoints"]
+        DB[("Neo4j<br>Graph Database<br>Port 7687")]
+    end
+
+    UI -->|"HTTP + JWT"| AGENT
+    AGENT -->|"MCP protocol"| MCP
+    MCP -->|"HTTP + JWT"| API
+    API -->|"Bolt"| DB

@@ -1,0 +1,123 @@
+# =============================================================================
+# Eugene — LOCAL image-build compose
+# =============================================================================
+# Builds all 5 Eugene service images on this machine and tags them with the
+# SAME names docker-compose.prod.yml expects. After building, you can either:
+#
+#   - Run the stack locally with docker-compose.prod.yml (pull_policy ignored
+#     because the local tag already exists), OR
+#   - Push the images to a registry by hand.
+#
+# -----------------------------------------------------------------------------
+# QUICK START
+# -----------------------------------------------------------------------------
+#   # Build all 5 images sequentially (one log stream — easy to read):
+#   docker compose -f docker-compose.build.yml build
+#
+#   # Build in parallel (faster, interleaved logs):
+#   docker compose -f docker-compose.build.yml build --parallel
+#
+#   # Build a single service:
+#   docker compose -f docker-compose.build.yml build eugene_agent_ws
+#
+#   # Force a no-cache rebuild:
+#   docker compose -f docker-compose.build.yml build --no-cache
+#
+#   # See what got produced:
+#   docker images | grep eugene
+#
+# -----------------------------------------------------------------------------
+# TAG OVERRIDES
+# -----------------------------------------------------------------------------
+# Defaults produce locally-named tags like:
+#     eugene-agent-ws:local
+#
+# To match the prod naming so the prod compose can use them without changes,
+# override REGISTRY and IMAGE_OWNER:
+#
+#     REGISTRY=ghcr.io IMAGE_OWNER=aisemanticexpert IMAGE_TAG=local \
+#       docker compose -f docker-compose.build.yml build
+#
+# That produces:  ghcr.io/aisemanticexpert/eugene-agent-ws:local  (etc.)
+#
+# Then run the stack with the prod file — it'll find the local tag and skip
+# the pull (pull_policy: missing recommended; see Note at bottom):
+#
+#     IMAGE_TAG=local docker compose -f docker-compose.prod.yml up -d
+#
+# -----------------------------------------------------------------------------
+# PUSH TO A REGISTRY AFTER BUILD
+# -----------------------------------------------------------------------------
+#   echo <PAT> | docker login ghcr.io -u <user> --password-stdin
+#   docker compose -f docker-compose.build.yml push
+#
+# -----------------------------------------------------------------------------
+# REQUIREMENTS
+# -----------------------------------------------------------------------------
+#   - Docker Desktop / Docker Engine running
+#   - The 5 Dockerfiles already present under docker/<service>/Dockerfile
+#   - ~8 GB free disk (combined image size after build)
+# =============================================================================
+
+x-eugene-build-defaults: &build-defaults
+  build:
+    context: .
+    # Use BuildKit cache mounts (already on by default with Docker 23+)
+    # Pass --build-arg via env: e.g. PYTHON_VERSION=3.13
+    args:
+      PYTHON_VERSION: "3.13"
+  # `pull` here means "pull a fresher BASE image before building" (e.g. python:3.13-slim).
+  # Set to false to use the cached base image and build faster.
+  pull_policy: build
+
+services:
+
+  eugene_ws:
+    <<: *build-defaults
+    image: ${REGISTRY:-local}/${IMAGE_OWNER:-eugene}/eugene-ws:${IMAGE_TAG:-local}
+    container_name: eugene-ws-build
+    build:
+      context: .
+      dockerfile: docker/eugene_ws/Dockerfile
+
+  eugene_mcp:
+    <<: *build-defaults
+    image: ${REGISTRY:-local}/${IMAGE_OWNER:-eugene}/eugene-mcp:${IMAGE_TAG:-local}
+    container_name: eugene-mcp-build
+    build:
+      context: .
+      dockerfile: docker/eugene_mcp/Dockerfile
+
+  eugene_agent_ws:
+    <<: *build-defaults
+    image: ${REGISTRY:-local}/${IMAGE_OWNER:-eugene}/eugene-agent-ws:${IMAGE_TAG:-local}
+    container_name: eugene-agent-ws-build
+    build:
+      context: .
+      dockerfile: docker/eugene_agent_ws/Dockerfile
+
+  eugene_agent_ui:
+    <<: *build-defaults
+    image: ${REGISTRY:-local}/${IMAGE_OWNER:-eugene}/eugene-agent-ui:${IMAGE_TAG:-local}
+    container_name: eugene-agent-ui-build
+    build:
+      context: .
+      dockerfile: docker/eugene_agent_ui/Dockerfile
+
+  eugene_agent_ui_next:
+    <<: *build-defaults
+    image: ${REGISTRY:-local}/${IMAGE_OWNER:-eugene}/eugene-agent-ui-next:${IMAGE_TAG:-local}
+    container_name: eugene-agent-ui-next-build
+    build:
+      context: .
+      dockerfile: docker/eugene_agent_ui_next/Dockerfile
+
+# -----------------------------------------------------------------------------
+# NOTE on pull_policy:
+# The prod compose uses `pull_policy: always`, which will try to pull from a
+# remote registry. To use the LOCAL images you built here without pushing,
+# either:
+#   (a) Add `--pull never` to your `docker compose up` command, or
+#   (b) Edit docker-compose.prod.yml and change `pull_policy: always` to
+#       `pull_policy: missing` so Docker uses local images when present.
+# -----------------------------------------------------------------------------

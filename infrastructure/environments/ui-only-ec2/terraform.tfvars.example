@@ -1,0 +1,44 @@
+# Copy to terraform.tfvars and fill in.
+
+aws_region  = "us-east-1"
+name_prefix = "eugene-ui"
+
+# REQUIRED — same VPC as the internal Eugene ALB so the UI can reach it.
+vpc_id    = "vpc-xxxxxxxxxxxxxxxxx"
+subnet_id = "subnet-xxxxxxxxxxxxxxxxx"   # public subnet for browser access
+
+# IMPORTANT — restrict this. Default is 0.0.0.0/0 (the whole internet).
+# Use your office IP or VPN range:
+#   allow_ingress_cidrs = ["203.0.113.42/32"]    # single IP
+allow_ingress_cidrs = ["10.0.0.0/8"]
+
+associate_public_ip = true
+expose_on_port_80   = true   # hit it as http://<ip>/  instead of  :18502
+
+instance_type  = "t3.small"
+root_volume_gb = 30
+
+# UI image. Defaults to the public ghcr.io tag from the CI workflow.
+# Override to pin a SHA tag in production:
+#   ui_image = "ghcr.io/aisemanticexpert/eugene-agent-ui-next:sha-abc1234"
+
+# If your ghcr.io image is PRIVATE, drop creds in SSM SecureString and reference
+# their ARNs here. Otherwise leave empty.
+# ghcr_username_ssm_arn = "arn:aws:ssm:us-east-1:111122223333:parameter/eugene-ui/ghcr-username"
+# ghcr_token_ssm_arn    = "arn:aws:ssm:us-east-1:111122223333:parameter/eugene-ui/ghcr-token"
+
+# --- HTTPS (optional but recommended for real users) ------------------------
+# Set enable_tls = true to create a public ALB + ACM cert (DNS-validated via
+# Route 53) + auto Route 53 alias.
+#
+# enable_tls            = true
+# domain_name           = "eugene.yourcorp.com"
+# route53_zone_id       = "Z0123456789ABCDEFGHIJ"
+# alb_public_subnet_ids = ["subnet-pub-aaaaaaaa", "subnet-pub-bbbbbbbb"]   # IGW-routed
+# alb_public_allow_cidrs = ["203.0.113.0/24"]                              # office IPs
+
+# Backend endpoints — defaults already match the values you supplied.
+# Only override if the ALB hostname or paths change.
+# eugene_alb_base      = "https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com"
+# eugene_mcp_url       = "https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com:8443/mcp"
+# eugene_agent_api_url = "https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com/agent/api"

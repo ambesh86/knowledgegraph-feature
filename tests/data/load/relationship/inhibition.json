@@ -1,0 +1,22 @@
+{
+    "inhibition": [
+        {
+            "source_entity": "53BP1",
+            "target_entity": "CD34+ HSPCs",
+            "relation": "Inhibition",
+            "relationship_description": "Inhibition of 53BP1 in CD34+ HSPCs is evaluated as a strategy to limit NHEJ and promote HDR, which is crucial for efficient gene editing."
+        },
+        {
+            "source_entity": "i53",
+            "target_entity": "53BP1",
+            "relation": "Inhibition",
+            "relationship_description": "i53 mRNA is designed to inhibit 53BP1, thereby promoting HDR over NHEJ in gene editing applications."
+        },
+        {
+            "source_entity": "AZD7648",
+            "target_entity": "NHEJ",
+            "relation": "Inhibition",
+            "relationship_description": "AZD7648 is a small-molecule inhibitor that targets DNA-PKcs, a key enzyme in the NHEJ pathway, to promote HDR in gene editing."
+        }
+    ]
+}

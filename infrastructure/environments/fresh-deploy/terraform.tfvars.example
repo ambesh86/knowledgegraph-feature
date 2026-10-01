@@ -1,0 +1,47 @@
+# Copy to terraform.tfvars and fill in the values below.
+
+aws_region  = "us-east-1"
+name_prefix = "eugene-fresh"     # MUST be different from existing 'eugene-search-*'
+
+# --- Network (you must have an existing VPC + subnets) -----------------------
+vpc_id             = "vpc-xxxxxxxxxxxxxxxxx"
+private_subnet_ids = ["subnet-aaaaaaaaaaaaaaaaa", "subnet-bbbbbbbbbbbbbbbbb"]
+public_subnet_ids  = ["subnet-aaaaaaaaaaaaaaaaa", "subnet-bbbbbbbbbbbbbbbbb"]
+                     # Same as private when alb_internal=true (internal ALB
+                     # lives in private subnets too)
+
+alb_internal        = true
+allow_ingress_cidrs = ["10.0.0.0/8"]            # restrict to VPC / VPN ranges
+alb_certificate_arn = ""                         # empty = HTTP listener (lab)
+                                                 # set ACM cert ARN for HTTPS
+
+# --- Images (the workflow at .github/workflows/build-images.yml publishes these) -
+image_registry = "ghcr.io"
+image_owner    = "aisemanticexpert"
+image_tag      = "latest"                        # pin to "sha-XXXXXXX" for prod
+
+# If pulling from a PRIVATE ghcr.io repo, create a Secrets Manager secret with
+# {"username":"<gh-user>","password":"<PAT>"} and put its ARN here.
+registry_auth_secret_arn = ""
+
+# --- Secrets (mark these as sensitive in CI; do NOT commit terraform.tfvars) -
+openai_api_key       = "sk-..."
+anthropic_api_key    = ""
+llm_provider         = "openai"
+eugene_client_secret = "change-me-to-a-strong-random-string"
+neo4j_password       = "change-me-too"
+
+agent_allowlist = "Damian.Knopp@cslbehring.com|Sterling.Foster@cslbehring.com|Paul.Disney@cslbehring.com"
+
+# --- Neo4j -------------------------------------------------------------------
+neo4j_instance_type  = "t3.large"
+neo4j_data_volume_gb = 100
+
+# --- ECS sizing (optional overrides) ----------------------------------------
+# service_desired_count = {
+#   eugene_agent_ws      = 2          # scale just the agent
+#   eugene_ws            = 1
+#   eugene_mcp           = 1
+#   eugene_agent_ui      = 1
+#   eugene_agent_ui_next = 1
+# }

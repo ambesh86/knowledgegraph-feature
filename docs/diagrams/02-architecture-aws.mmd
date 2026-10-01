@@ -1,0 +1,60 @@
+%% Figure 2 — Target AWS architecture. Shaded boxes are the ONLY components that
+%% change; the application code is identical.
+flowchart TB
+  USER(["BD Analyst<br/>SSO via Entra ID"])
+
+  subgraph EDGE["Edge"]
+    CF["CloudFront<br/>TLS termination · WAF"]
+    ALB["Application Load Balancer<br/>path rules /nextgen/*"]
+  end
+
+  subgraph VPC["VPC — private subnets, no public egress except NAT"]
+    subgraph ECSUI["ECS Fargate — UI service"]
+      UI["eugene_agent_ui_next<br/>Next.js BFF<br/>2 tasks, autoscaled"]
+    end
+    subgraph ECSSCOUT["ECS Fargate — scanner service"]
+      SC["eugene_scout<br/>FastAPI<br/>1 task · scheduler disabled"]
+    end
+    RDS[("RDS Postgres<br/>Atlas auth · conversations")]
+    NEO[("Neo4j / eugene_ws<br/>ontology")]
+  end
+
+  subgraph SCHEDULING["Scheduling — replaces the in-container cron"]
+    EB["EventBridge Scheduler<br/>cron(0 2 * * ? *)"]
+    LAM["Lambda invoker<br/>POST /scan with the token"]
+  end
+
+  subgraph STORAGE["Storage — unchanged layout"]
+    S3RAW[("S3 raw/<br/>STAGING<br/>lifecycle 90d → expire")]
+    S3CUR[("S3 curated/<br/>FINAL<br/>versioned")]
+    S3RUN[("S3 runs/ + config/")]
+  end
+
+  subgraph SEC["Security & operations"]
+    SM["Secrets Manager<br/>API token · USPTO key"]
+    ROLE["IAM task role<br/>least privilege, no static keys"]
+    CW["CloudWatch Logs<br/>structured JSON"]
+    ALARM["CloudWatch Alarms<br/>scan failure · source degraded"]
+  end
+
+  BR["Bedrock — Nova<br/>via VPC endpoint"]
+  SNS["SNS / Slack webhook<br/>high-priority alerts"]
+
+  USER --> CF --> ALB --> UI
+  UI -->|"Bearer token from Secrets Manager"| SC
+  UI --> RDS
+  EB --> LAM -->|"POST /scan"| SC
+  SC --> S3RAW & S3CUR & S3RUN
+  SC -.-> BR
+  SC -.-> NEO
+  SC --> SNS
+  ROLE -.grants.-> SC
+  SM -.injected at task start.-> SC & UI
+  SC --> CW --> ALARM
+
+  classDef changed fill:#FFF3E0,stroke:#B26A00,stroke-width:2px
+  classDef same fill:#E8F5E9,stroke:#1B5E20,stroke-width:2px
+  classDef store fill:#E2F3F1,stroke:#0B7A75,stroke-width:2px
+  class EB,LAM,ROLE,SM,CF,ALB,CW,ALARM changed
+  class UI,SC same
+  class S3RAW,S3CUR,S3RUN store

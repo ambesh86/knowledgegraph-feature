@@ -1,0 +1,15 @@
+
+{
+  "theme": "default",
+  "themeVariables": {
+    "fontFamily": "Helvetica, Arial, sans-serif",
+    "primaryColor": "#1B3A6B",
+    "primaryTextColor": "#FFFFFF",
+    "primaryBorderColor": "#1B3A6B",
+    "lineColor": "#2E6DA4",
+    "secondaryColor": "#E3F2FD",
+    "tertiaryColor": "#F5F5F5",
+    "noteBkgColor": "#FFF3E0",
+    "noteBorderColor": "#E65100"
+  }
+}

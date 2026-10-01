@@ -1,0 +1,52 @@
+# deprecated
+# todo: delete this code
+workflow:
+  rules:
+    - when: always
+  auto_cancel:
+    on_new_commit: interruptible
+
+variables:
+  TF_DB_MODULE: ${CI_COMMIT_BRANCH}-database
+  TF_DB_PLAN: ${TF_DB_MODULE}-plan.tfplan
+
+stages:
+  - terraform-database
+  - apply-database
+
+validate-database:
+  stage: terraform-database
+  extends:
+    - .aws-role-assumption
+  script:
+    - cd ${TF_ROOT}/${TF_DB_MODULE}
+    - terraform init -backend-config="../global.s3.backend.hcl" -backend-config="./${TF_DB_MODULE}.s3.backend.hcl"
+    - terraform validate
+
+plan-database:
+  extends:
+    - .aws-role-assumption
+  stage: terraform-database
+  script:
+    - cd ${TF_ROOT}/${TF_DB_MODULE}
+    - terraform init -backend-config="../global.s3.backend.hcl" -backend-config="./${TF_DB_MODULE}.s3.backend.hcl"
+    - terraform plan -var-file="${CI_COMMIT_BRANCH}.tfvars" -out=../../../${TF_DB_PLAN}
+    - cd -
+  artifacts:
+    paths:
+      - ${TF_DB_PLAN}
+    expire_in: 1 week
+  dependencies:
+    - validate-database
+
+apply-database:
+  extends:
+    - .aws-role-assumption
+  stage: apply-database
+  script:
+    - cd ${TF_ROOT}/${TF_DB_MODULE}
+    - terraform init -backend-config="../global.s3.backend.hcl" -backend-config="./${TF_DB_MODULE}.s3.backend.hcl"
+    - terraform apply -auto-approve ../../../${TF_DB_PLAN}
+  dependencies:
+    - plan-database
+  when: manual

@@ -1,0 +1,22 @@
+[
+  {
+    "entity_name": "i53 mRNA",
+    "entity_type": "Molecule",
+    "entity_description": "i53 mRNA is a synthetic messenger RNA designed to inhibit 53BP1, thereby promoting HDR over NHEJ in gene editing applications."
+  },
+  {
+    "entity_name": "GSE56 mRNA",
+    "entity_type": "Molecule",
+    "entity_description": "GSE56 mRNA is another synthetic messenger RNA used in combination with i53 mRNA to further enhance HDR efficiency in gene editing."
+  },
+  {
+    "entity_name": "AZD7648",
+    "entity_type": "Molecule",
+    "entity_description": "AZD7648 is a small-molecule inhibitor that targets DNA-PKcs, a key enzyme in the NHEJ pathway. It is used to inhibit NHEJ and promote HDR in gene editing."
+  },
+  {
+    "entity_name": "rAAV6 templates",
+    "entity_type": "Molecule",
+    "entity_description": "Recombinant Adeno-Associated Virus serotype 6 (rAAV6) templates are viral vectors used to deliver DNA templates for HDR in gene editing applications."
+  }
+]

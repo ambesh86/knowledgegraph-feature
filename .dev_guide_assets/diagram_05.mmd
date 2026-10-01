@@ -1,0 +1,39 @@
+flowchart TB
+    subgraph "eugene-agent-ui (Streamlit)"
+        UI_INPUT["User types question"]
+        UI_TOKEN["User pastes JWT token"]
+        UI_STREAM["Displays streaming response"]
+    end
+
+    subgraph "eugene-agent-ws (FastAPI + Strands)"
+        ROUTER["chat_query_agent_router.py<br>POST /query/stream"]
+        AGENT["EugeneDataAgent<br><i>System prompt: 'You are an agent<br>investigating biomedical companies...'</i>"]
+        STRANDS["Strands ReAct Loop<br><i>Reason → Act → Observe<br>repeat until answer found</i>"]
+    end
+
+    subgraph "eugene-mcp (FastMCP)"
+        MCP_SVR["FastMCP Server<br>12 registered tools"]
+        TOOLS["Tools:<br>lookup_node_by_value<br>fetch_drug_aliases<br>fetch_facts<br>fetch_node_relationships<br>find_organization_names<br>...7 more"]
+    end
+
+    subgraph "eugene_ws (Core API)"
+        API["FastAPI endpoints"]
+    end
+
+    UI_INPUT --> ROUTER
+    UI_TOKEN --> ROUTER
+    ROUTER --> AGENT
+    AGENT --> STRANDS
+
+    STRANDS -->|"1. REASON: I need to find this drug"| STRANDS
+    STRANDS -->|"2. ACT: call lookup_node_by_value"| MCP_SVR
+    MCP_SVR --> TOOLS
+    TOOLS -->|"HTTP GET /node/find/Hemophilia%20A"| API
+    API -->|"Neo4j query result"| TOOLS
+    TOOLS -->|"Tool result"| MCP_SVR
+    MCP_SVR -->|"3. OBSERVE: Found node ID abc123"| STRANDS
+    STRANDS -->|"4. REASON: Now get its facts"| STRANDS
+    STRANDS -->|"5. ACT: call fetch_facts(abc123)"| MCP_SVR
+
+    STRANDS -->|"Final answer"| ROUTER
+    ROUTER -->|"SSE stream"| UI_STREAM

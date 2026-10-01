@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Browser
+    participant API as eugene_ws<br>/login
+    participant JWT as JWT Issuer<br>eugene_jwts.py
+
+    Note over Browser,JWT: Local Development (ENVIRONMENT=local)
+    Browser->>API: GET /login
+    API->>JWT: issue_local_development_eugene_token_with_roles()
+    JWT-->>API: HS256 JWT (24h TTL, user: eugene.test)
+    API-->>Browser: HTML with token textarea
+    Note over Browser: Copy token → paste in Swagger or Chat UI
+
+    Note over Browser,JWT: How JWT is validated on every request
+    Browser->>API: GET /labels/drug<br>Authorization: Bearer <jwt>
+    API->>API: get_current_user(credentials)<br>→ validate_eugene_access_token(token)<br>→ decode HS256, check aud/iss/exp/claims
+    API-->>Browser: {"count": 10, "results": [...]}

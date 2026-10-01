@@ -1,0 +1,69 @@
+%% Figure 1 — Component architecture, as deployed today (Docker Compose)
+flowchart TB
+  subgraph BROWSER["Browser — CSL Atlas"]
+    RV["Radar<br/>live scored signals"]
+    WV["Watchlist<br/>ranked companies"]
+    BV["Briefing<br/>weekly partnership report"]
+    TV["Today<br/>counters + digest"]
+    SV["Settings<br/>weights · sources · runs"]
+  end
+
+  subgraph BFF["eugene_agent_ui_next :18502 — Next.js BFF"]
+    AUTH["currentUser → 401<br/>area scope from profile,<br/>never from the query string"]
+    ROUTES["/api/atlas/signals · watchlist<br/>scout/stats · runs · config<br/>scout/briefing · freshness · scan"]
+  end
+
+  subgraph SCOUT["eugene_scout :18300 — FastAPI + APScheduler (127.0.0.1 only)"]
+    SCHED["APScheduler<br/>daily 02:00 UTC<br/>weekly briefing Mon"]
+    ORCH["orchestrator.run<br/>single-flight lock"]
+    subgraph COL["Collectors — never raise, report instead"]
+      C1["trials.py"]
+      C2["literature.py"]
+      C3["patents.py"]
+      C4["edgar.py"]
+      C5["epo.py<br/>disabled"]
+    end
+    PIPE["enrich → relevance gate<br/>→ dedupe → merge"]
+    SCORE["scoring.py<br/>PURE · 6 factors · no I/O"]
+    RAT["rationale.py<br/>LLM prose + numeric fence"]
+    IDX["SignalIndex<br/>in-memory, atomic swap"]
+  end
+
+  subgraph S3["s3://eugene-scout-087084717211"]
+    RAW[("raw/<br/>STAGING · write-once")]
+    CUR[("curated/<br/>FINAL · signals · index<br/>snapshots · digests")]
+    RUNS[("runs/<br/>audit manifests")]
+    CFG[("config/<br/>BD-editable")]
+  end
+
+  subgraph EXT["External"]
+    E1["ClinicalTrials.gov v2"]
+    E2["Europe PMC REST"]
+    E3["USPTO ODP"]
+    E4["SEC EDGAR"]
+    E5["Bedrock — Nova"]
+    E6["eugene_ws → Neo4j"]
+  end
+
+  RV & WV & BV & TV & SV --> AUTH --> ROUTES
+  ROUTES -->|"HTTP + Bearer token"| SCOUT
+  SCHED --> ORCH
+  ORCH --> COL
+  C1 --> E1
+  C2 --> E2
+  C3 --> E3
+  C4 --> E4
+  COL -->|RawSignal| RAW
+  COL --> PIPE --> SCORE --> RAT --> CUR
+  RAT -.optional.-> E5
+  PIPE -.entity linkage.-> E6
+  ORCH --> RUNS
+  CFG --> ORCH
+  CUR --> IDX --> ROUTES
+
+  classDef store fill:#E2F3F1,stroke:#0B7A75,stroke-width:2px
+  classDef pure fill:#E8F5E9,stroke:#1B5E20,stroke-width:2px
+  classDef ext fill:#F4F6F8,stroke:#5B6770
+  class RAW,CUR,RUNS,CFG store
+  class SCORE pure
+  class E1,E2,E3,E4,E5,E6 ext

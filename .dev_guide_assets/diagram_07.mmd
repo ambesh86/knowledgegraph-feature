@@ -1,0 +1,6 @@
+flowchart LR
+    PUSH["git push to qa/main"] --> SCAN["Checkov Security Scan"]
+    SCAN --> DOCKER["Docker Build + ECR Push"]
+    DOCKER --> TF_PLAN["Terraform Plan"]
+    TF_PLAN --> TF_APPLY["Terraform Apply<br>(manual approval)"]
+    TF_APPLY --> ECS["AWS ECS Fargate"]

@@ -1,0 +1,24 @@
+# Minimal dependencies for running the FETCHING half only (python -m scout.cli),
+# on a host where containers are not permitted — a corporate VDI, typically.
+#
+# requirements.txt installs the service: FastAPI, uvicorn[standard], APScheduler,
+# and the test suite. None of that is reachable from the CLI path, and on a
+# locked-down desktop every extra wheel is another thing that can be blocked,
+# fail to build, or need a compiler. Verified empirically: a clean venv with the
+# five packages below runs `python -m scout.cli scan` to completion against the
+# live bucket.
+#
+# All five ship Windows wheels and need no build toolchain.
+#
+#   python -m venv .venv
+#   .venv\Scripts\pip install -r agents\eugene-scout\requirements-fetcher.txt
+#
+# Versions are pinned to match requirements.txt exactly. A fetcher writing S3
+# objects that the serving half then parses must agree with it on pydantic's
+# serialisation, so these two files must not be allowed to drift apart.
+
+pydantic==2.10.4
+PyYAML==6.0.2
+requests==2.32.3
+boto3==1.35.92
+python-json-logger==2.0.7

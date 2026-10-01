@@ -1,0 +1,44 @@
+{
+  "family": "stage-eugene-agent-ui-nextgen-task",
+  "cpu": "1024",
+  "memory": "2048",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "executionRoleArn": "arn:aws:iam::087084717211:role/stage-uspto_ecs_task_execution_role",
+  "taskRoleArn": "arn:aws:iam::087084717211:role/stage-uspto_ecs_task_role",
+  "containerDefinitions": [
+    {
+      "name": "agent_ui_nextgen",
+      "image": "087084717211.dkr.ecr.us-east-1.amazonaws.com/eugene/agent_ui_nextgen:latest",
+      "cpu": 1024,
+      "memory": 2048,
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 8000, "hostPort": 8000, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "PORT", "value": "8000" },
+        { "name": "HOSTNAME", "value": "0.0.0.0" },
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "NODE_TLS_REJECT_UNAUTHORIZED", "value": "0" },
+        { "name": "EUGENE_CORE_API_URL",   "value": "https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com" },
+        { "name": "EUGENE_AGENT_API_URL",  "value": "https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com/agent/api" },
+        { "name": "EUGENE_MCP_SERVER_URL", "value": "https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com/mcp" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "stage-eugene-uspto-agent-ui-nextgen",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "date || exit 0"],
+        "interval": 90,
+        "timeout": 5,
+        "retries": 3
+      }
+    }
+  ]
+}

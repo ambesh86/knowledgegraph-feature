@@ -1,0 +1,8 @@
+flowchart LR
+  Client[AgentCore caller] -->|prompt, include_tools, conversation_id| Runtime[AgentCore Runtime<br/>thin gateway]
+  Runtime -->|HTTPS + bearer auth<br/>POST /query| Eugene[Eugene Agent Web Service]
+  Eugene -->|existing intent and source routing| MCP[Eugene MCP + existing research tools]
+  MCP --> Eugene
+  Eugene -->|existing ChatQueryResponse JSON| Runtime
+  Runtime -->|unchanged response| Client
+  Secret[Runtime-managed auth secret] -. fallback bearer token .-> Runtime

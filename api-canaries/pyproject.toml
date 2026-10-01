@@ -1,0 +1,10 @@
+[project]
+name = "api-canaries"
+version = "0.1.0"
+description = "euGENE API canaries"
+readme = "README.md"
+requires-python = ">=3.12.7"
+dependencies = []
+
+[tool.black]
+	line-length = 88

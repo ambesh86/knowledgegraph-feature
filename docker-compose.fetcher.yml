@@ -1,0 +1,78 @@
+# =============================================================================
+# The fetching half of the split deployment — run this where the internet is.
+#
+#   VDI / CI runner  (has internet)          AWS  (has uptime + users)
+#   ─────────────────────────────────        ──────────────────────────────
+#   scout  scan  ──┐                      ┌── scout  serve  → Radar, Watchlist,
+#   ade    ingest ─┼──→  S3 bucket  ──────┤                    Today, Briefing
+#                  │                      └── ade    serve   → Evidence pages
+#
+# Why this exists: an SCP denies internet gateways across the whole AWS account,
+# so nothing deployed there can reach ClinicalTrials.gov, Europe PMC, NCBI,
+# USPTO or SEC — and no amount of IAM elevation changes that. S3, however, is
+# reachable from AWS over a gateway endpoint. Both services already separate
+# cleanly into "needs the internet" and "needs only S3", so the two halves can
+# live in different places and meet in the bucket.
+#
+# Usage on the VDI:
+#   aws sso login --profile eugene-deploy
+#   docker compose -f docker-compose.fetcher.yml up -d
+#   docker compose -f docker-compose.fetcher.yml logs -f eugene-scout-fetcher
+#
+# Freshness equals the last time this ran. That is visible to users through the
+# "as of <date>" indicator rather than hidden, so a laptop that was closed for a
+# week understates its data instead of pretending.
+# =============================================================================
+
+services:
+  eugene-scout-fetcher:
+    image: ${SCOUT_IMAGE:-eugene-scout:local}
+    container_name: eugene-scout-fetcher
+    restart: unless-stopped
+    environment:
+      # The whole point of this compose file: THIS half scans.
+      SCOUT_SCAN_ENABLED: "true"
+      SCOUT_S3_BUCKET: ${SCOUT_S3_BUCKET:?set SCOUT_S3_BUCKET — must match the AWS deployment}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      # Daily at 02:00 UTC by default, matching the AWS-side expectation.
+      SCOUT_CRON_HOUR: ${SCOUT_CRON_HOUR:-2}
+      SCOUT_CRON_MINUTE: ${SCOUT_CRON_MINUTE:-0}
+      # A contact-bearing UA is a hard requirement at SEC and a stated courtesy
+      # at NCBI/EBI — anonymous clients get throttled or blocked.
+      SCOUT_USER_AGENT: ${SCOUT_USER_AGENT:-CSL-Atlas-Scout/1.0 (biomedical BD intelligence)}
+      SCOUT_API_TOKEN: ${SCOUT_API_TOKEN:-}
+      # Corporate egress on a VDI is usually proxied; harmless when unset.
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,169.254.169.254}
+    volumes:
+      # SSO credentials from the host, read-only. Nothing is copied into the
+      # image, so a stolen image carries no access.
+      - ${HOME}/.aws:/root/.aws:ro
+    ports:
+      # Loopback only. This is a fetcher on someone's desktop, not a service —
+      # binding it to 0.0.0.0 on a corporate VDI would be an unauthenticated
+      # scanner API exposed to the office network.
+      - "127.0.0.1:18300:8000"
+
+  eugene-ade-fetcher:
+    image: ${ADE_IMAGE:-eugene-ade:local}
+    container_name: eugene-ade-fetcher
+    restart: unless-stopped
+    environment:
+      ADE_INGEST_ENABLED: "true"
+      ADE_S3_BUCKET: ${ADE_S3_BUCKET:?set ADE_S3_BUCKET — must match the AWS deployment}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      ADE_LAYOUT_ENABLED: ${ADE_LAYOUT_ENABLED:-true}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,169.254.169.254}
+    volumes:
+      - ${HOME}/.aws:/root/.aws:ro
+      # 40MB of YOLO weights, cached so a restart is not a re-download.
+      - eugene_ade_models:/root/.cache
+    ports:
+      - "127.0.0.1:18100:8000"
+
+volumes:
+  eugene_ade_models:

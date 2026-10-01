@@ -1,0 +1,17 @@
+[
+    {
+        "entity_name": "53BP1",
+        "entity_type": "Protein",
+        "entity_description": "53BP1 is a protein involved in DNA damage response, particularly in non-homologous end joining (NHEJ) repair pathways. Inhibition of 53BP1 in CD34+ HSPCs has been evaluated as an approach to limit NHEJ and promote homologous directed repair (HDR)."
+    },
+    {
+        "entity_name": "DNA-PKcs",
+        "entity_type": "Protein",
+        "entity_description": "DNA-dependent protein kinase catalytic subunit (DNA-PKcs) is a key enzyme in the NHEJ pathway. Inhibition of DNA-PKcs is used to promote HDR in gene editing."
+    },
+    {
+        "entity_name": "PolQ",
+        "entity_type": "Protein",
+        "entity_description": "DNA polymerase theta (PolQ) is an enzyme involved in an alternative end-joining pathway known as microhomology-mediated end joining (MMEJ). Inhibition of PolQ is used to further enhance HDR by reducing competing repair pathways."
+    }
+]

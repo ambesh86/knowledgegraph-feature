@@ -1,0 +1,211 @@
+<article class="guide">
+  <carousel class="deck container-fluid">
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>GraphSage Embeddings Guide</h3>
+        <p class="lead">
+          This guide will show how to create graph sage embeddings. GraphSage training and models does not work in the current neo4j training and link prediction pipeline.
+        </p>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Project A Graph</h3>
+        <p class="lead">
+          Project a graph for the pubmed articles. Include drug, disease, gene_protein foundational nodes. Include only the `has_extraction` pubmed article relationship to the foundational graph nodes.
+          Include the `model2vec_embeddings` to be merged with the graph sage embeddings. 
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.graph.project(
+  'pubmed_graph',
+  [
+      'disease', 
+      'drug',
+      'gene_protein',
+      'pubmed_document'
+  ],
+  {
+    has_extraction: {orientation: 'UNDIRECTED', type:'*'},
+    disease_disease: {orientation: 'UNDIRECTED', type:'*'},
+    disease_protein: {orientation: 'UNDIRECTED', type:'*'},
+    drug_protein: {orientation: 'UNDIRECTED', type:'*'},
+    drug_drug: {orientation: 'UNDIRECTED', type:'*'},
+    drug_effect: {orientation: 'UNDIRECTED', type:'*'},
+    protein_protein: {orientation: 'UNDIRECTED', type:'*'},
+    indication: {orientation: 'UNDIRECTED', type:'*'},
+    contraindication: {orientation: 'UNDIRECTED', type:'*'}
+  },
+  {
+    nodeProperties: ['model2vec_embeddings', 'node_idx', 'label_one_hot_encoding']
+  }
+)
+yield
+  graphName AS graph, nodeProjection, nodeCount AS nodes, relationshipCount AS rels
+return
+  graph, nodeProjection, nodes, rels;
+          </pre>
+          <figcaption>Project a pubmed graph</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Sample Graph For Training</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Reduce the size of the training graph using https://neo4j.com/docs/graph-data-science/current/management-ops/graph-creation/sampling/rwr/[random walk with restarts]. We can use random walk to train on a subset of the total graph because graph sage is "inductive" meaning we can learn embeddings for new unseen nodes.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.graph.sample.rwr('pubmed_sampled_graph', 'pubmed_graph', { samplingRatio: 0.35 })
+yield nodeCount, relationshipCount
+return nodeCount, relationshipCount;
+          </pre>
+          <figcaption>Reduce graph size by sampling with random walks</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Train Graph Embeddings</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Train graph embeddings using GraphSage. Merges graph embeddings with the sentence embeddings in field `model2vec_embeddings`.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.beta.graphSage.train(
+  'pubmed_sampled_graph',
+  {
+      modelName: 'pubmed_graphsage_model',
+      featureProperties: ['model2vec_embeddings', 'label_one_hot_encoding'],
+      embeddingDimension: 512,
+      aggregator: 'mean',
+      epochs: 3,
+      maxIterations: 15,
+      learningRate: .075,
+      batchSize: 128,
+      searchDepth: 5,
+      penaltyL2: .001,
+      sampleSizes: [32, 12],
+      activationFunction: 'relu',
+      projectedFeatureDimension: 256
+  }
+)
+yield trainMillis, configuration, modelInfo
+return trainMillis, configuration, modelInfo;
+          </pre>
+          <figcaption>Train graph embeddings using GraphSage</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Write Graph Embeddings To A New Field</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Write graph embeddings to new field.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.beta.graphSage.mutate(
+  'pubmed_graph',
+  {
+    mutateProperty: 'graphsage_embedding',
+    modelName: 'pubmed_graphsage_model'
+  }
+) yield
+  nodeCount,
+  nodePropertiesWritten;
+          </pre>
+          <figcaption>Write graph embeddings</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Use Graph Embeddings To Do KNN Node Classification</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Use graph embeddings to do KNN node classification. The classification will connect similar PubMed articles.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.knn.filtered.write('pubmed_graph', {
+  nodeProperties: [
+    {
+      graphsage_embedding: 'COSINE'
+    }
+  ],
+  nodeLabels: ['pubmed_document'],
+  topK: 6,
+  sampleRate: 1.0,
+  deltaThreshold: 0.001,
+  similarityCutoff: .85,
+  randomSeed: 75,
+  concurrency: 1,
+  writeProperty: 'graphsage_score',
+  writeRelationshipType: 'similar_article'
+})
+yield similarityDistribution
+return similarityDistribution.mean as meanSimilarity;
+          </pre>
+          <figcaption>Use graph embeddings to do KNN node classification</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Similar Articles</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          View similar articles
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+match p=(d1:pubmed_document)-[r:similar_article]-(d2:pubmed_document)
+where r.graphsage_score > .5
+return p;
+          </pre>
+          <figcaption>view similar articles</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Clean Up</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Delete graph, models and pipeline.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+// delete article knn links
+match (d1:pubmed_document)-[r:similar_article]-(d2:pubmed_document)
+delete r;
+
+// drop model
+call gds.model.drop('pubmed_graphsage_model');
+
+// drop graphs
+call gds.graph.drop('pubmed_graph');
+call gds.graph.drop('pubmed_sampled_graph');
+          </pre>
+          <figcaption>Clean up</figcaption>
+        </figure>
+      </div>
+    </slide>
+  </carousel>
+</article>
+
+
+

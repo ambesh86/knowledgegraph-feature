@@ -1,0 +1,42 @@
+%% Figure 6 — Where the data lives. Two tiers, different guarantees.
+flowchart LR
+    subgraph SRC["Upstream"]
+        A1["ClinicalTrials.gov"]
+        A2["Europe PMC"]
+        A3["USPTO ODP"]
+        A4["SEC EDGAR"]
+    end
+
+    subgraph RAWT["RAW — staging tier"]
+        R1["raw/dt=2026-08-09/<br/>run=&lt;id&gt;/area=hemophilia/<br/>source=clinicaltrials/records.jsonl.gz"]
+        R2["Write-once · never mutated<br/>Untouched upstream payload<br/>Lifecycle: expire at 90 days"]
+        R3["PURPOSE: replay a scoring change<br/>over history without re-crawling.<br/>Answers 'what did we actually see<br/>on the 3rd?' months later"]
+    end
+
+    subgraph CURT["CURATED — final tier"]
+        C1["curated/signals/area=&lt;a&gt;/signals.jsonl.gz<br/>curated/companies/area=&lt;a&gt;/companies.jsonl.gz"]
+        C2["curated/index/area=&lt;a&gt;/index.json<br/>loaded into memory, serves every query"]
+        C3["curated/snapshots/area=&lt;a&gt;/dt=&lt;date&gt;/<br/>immutable — the 30-day delta baseline"]
+        C4["curated/digests/area=&lt;a&gt;/dt=&lt;date&gt;/<br/>the weekly briefing"]
+        C5["Rewritten by each scan<br/>Bucket versioning retains the previous<br/>generation"]
+    end
+
+    subgraph AUDIT["AUDIT & CONTROL"]
+        U1["runs/&lt;run_id&gt;/manifest.json<br/>per-source outcome, counts, errors"]
+        U2["config/scan_config.json<br/>weights, thresholds, versioned"]
+    end
+
+    A1 & A2 & A3 & A4 -->|collect| R1
+    R1 --- R2 --- R3
+    R1 -->|"enrich → score → publish"| C1
+    C1 --- C2 --- C3 --- C4 --- C5
+    C2 --> UI["UI queries"]
+    R1 -.-> U1
+    C1 -.-> U1
+
+    classDef raw fill:#FFF3E0,stroke:#B26A00,stroke-width:2px
+    classDef cur fill:#E2F3F1,stroke:#0B7A75,stroke-width:2px
+    classDef aud fill:#F4F6F8,stroke:#5B6770
+    class R1,R2,R3 raw
+    class C1,C2,C3,C4,C5 cur
+    class U1,U2 aud

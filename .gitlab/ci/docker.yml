@@ -1,0 +1,51 @@
+workflow:
+  rules:
+    - when: always
+  auto_cancel:
+    on_new_commit: interruptible
+
+stages:
+  - docker
+
+variables:
+  EXECUTE_PATH: ${CI_PROJECT_DIR}
+  ACCOUNT_ID: 010928221940
+  AWS_DEFAULT_REGION: eu-central-1
+  ECR_REPOSITORY: $ACCOUNT_ID.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/$IMAGE_NAME
+
+eugene-neo4j-ce:
+  extends: .docker-build-push-template
+  variables:
+    DOCKERFILE_PATH: containers/eugene_neo4j_ce/Dockerfile
+    IMAGE_NAME: eugene/neo4j_ce
+
+eugene-ws:
+  extends: .docker-build-push-template
+  variables:
+    DOCKERFILE_PATH: containers/eugene_ws/Dockerfile
+    IMAGE_NAME: eugene/search_ws
+
+eugene-patent-search-trainer:
+  extends: .docker-build-push-template
+  variables:
+    DOCKERFILE_PATH: containers/patent_search_trainer/Dockerfile
+    IMAGE_NAME: eugene/patent_search_trainer
+
+#  permission error for ecr:InitalLayerPush
+# eugene-api-canaries:
+#   extends: .docker-build-push-template
+#   variables:
+#     DOCKERFILE_PATH: containers/eugene_api_canaries/Dockerfile
+#     IMAGE_NAME: eugene/api_canaries
+
+.docker-build-push-template:
+  extends: .aws-role-assumption
+  stage: docker
+  script:
+    - cd "${EXECUTE_PATH}"
+    - aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${ECR_REPOSITORY}"
+    - docker build -t ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} -f ${DOCKERFILE_PATH} .
+    - docker tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} ${ECR_REPOSITORY}:${CI_COMMIT_SHORT_SHA}
+    - docker push ${ECR_REPOSITORY}:${CI_COMMIT_SHORT_SHA}
+    - docker tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} ${ECR_REPOSITORY}:latest
+    - docker push ${ECR_REPOSITORY}:latest

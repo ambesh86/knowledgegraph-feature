@@ -1,0 +1,43 @@
+%% Figure 4b — Analysis and delivery: from staged records to the briefing
+flowchart LR
+    RAWZ[("S3 raw/<br/>staged records")]
+
+    subgraph ANALYSE["4. ANALYSIS"]
+        direction TB
+        ENRICH["enrich<br/>company attribution<br/>keyword re-match, spelling-normalised"]
+        GATE["relevance gate<br/>must match a SPECIFIC keyword"]
+        DEDUPE["dedupe<br/>identity + cross-source merge"]
+        SCORE["score()<br/>6 weighted factors, normalised<br/>over the factors that APPLIED"]
+        REVIEW["review flags<br/>low confidence surfaced, never hidden"]
+        PROSE["rationale<br/>LLM writes prose about a<br/>decision already made · numeric fence"]
+        ENRICH --> GATE --> DEDUPE --> SCORE --> REVIEW --> PROSE
+    end
+
+    subgraph PUBLISH["5. CURATED STORE"]
+        direction TB
+        CURZ[("S3 curated/<br/>signals · companies · index<br/>snapshots · digests")]
+        MEM["in-memory index<br/>serves every UI query"]
+        CURZ --> MEM
+    end
+
+    subgraph REPORT["6. REPORT & DELIVERY"]
+        direction TB
+        RADAR["Radar<br/>ranked signals + score breakdown"]
+        WATCH["Watchlist<br/>ranked companies + 30-day delta"]
+        BRIEF["Weekly briefing<br/>8-12 companies · rationale<br/>sources · next action"]
+        ART["Published artifact<br/>MD / HTML / DOCX / PDF"]
+        ALERT["Webhook / email<br/>high priority only, idempotent"]
+        BRIEF --> ART
+    end
+
+    RAWZ -->|"replay without re-crawling"| ENRICH
+    PROSE --> CURZ
+    MEM --> RADAR
+    MEM --> WATCH
+    CURZ --> BRIEF
+    PROSE --> ALERT
+
+    classDef store fill:#E2F3F1,stroke:#0B7A75,stroke-width:2px
+    classDef pure fill:#E8F5E9,stroke:#1B5E20,stroke-width:2px
+    class RAWZ,CURZ store
+    class SCORE pure

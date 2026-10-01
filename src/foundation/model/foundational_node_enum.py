@@ -1,0 +1,47 @@
+from enum import Enum
+
+
+class FoundationalNodeEnum(Enum):
+    UNKNOWN = 0, "Unknown".lower()
+
+    ANATOMY = 1, "ANATOMY".lower()
+    BIOLOGICAL_PROCESS = 2, "BIOLOGICAL_PROCESS".lower()
+    CELLULAR_COMPONENT = 3, "CELLULAR_COMPONENT".lower()
+    CLINICAL_TRIAL = 4, "ClinicalTrial"
+    COLLABORATOR = 5, "COLLABORATOR".lower()
+    CONDITION = 6, "CONDITION".lower()
+    DISEASE = 7, "DISEASE".lower()
+    DRUG = 8, "DRUG".lower()
+    EFFECT_PHENOTYPE = 9, "EFFECT_PHENOTYPE".lower()
+    EXPOSURE = 10, "EXPOSURE".lower()
+    FUNDER_TYPE = 11, "FUNDER_TYPE".lower()
+    GENE_PROTEIN = 12, "GENE_PROTEIN".lower()
+    INTERVENTION = 13, "INTERVENTION".lower()
+    MOLECULAR_FUNCTION = 14, "MOLECULAR_FUNCTION".lower()
+    PATHWAY = 15, "PATHWAY".lower()
+    PATENT = 16, "PATENT".lower()
+    PHASE = 17, "PHASE".lower()
+    PRIMARY_OUTCOME_MEASURE = 18, "PRIMARY_OUTCOME_MEASURE".lower()
+    SECONDARY_OUTCOME_MEASURE = 19, "SECONDARY_OUTCOME_MEASURE".lower()
+    SPONSOR = 20, "SPONSOR".lower()
+    DRUG_PRODUCT = 21, "DRUG_PRODUCT".lower()
+    DRUG_SYNONYM = 22, "DRUG_SYNONYM".lower()
+
+    APPROVED_PATENT = 30, "Approved_Patent"
+    PATENT_APPLICATION = 31, "Patent_Application"
+    ORGANIZATION = 32, "Organization"
+    RESEARCH = 33, "Research"
+    INVESTIGATORS = 34, "Investigators"
+
+    GRAPHRAG_SUMMARY = 100, "SUMMARY".lower()
+    GRAPHRAG_SUMMARY_FINDING = 101, "SUMMARY_FINDING".lower()
+
+    USPTO_APPLICATION = 200, "USPTO_APPLICATION".lower()
+    USPTO_PGPUB = 201, "USPTO_PGPUB".lower()
+
+    CSL_TPP = 300, "CSL_TPP".lower()
+    CSL_TPP_QUESTION = 301, "CSL_TPP".lower()
+
+    PUBMED_DOCUMENT = 400, "PUBMED_DOCUMENT".lower()
+    PUBMED_SUMMARY = 401, "PUBMED_SUMMARY".lower()
+    PUBMED_SUMMARY_FINDING = 402, "PUBMED_SUMMARY_FINDING".lower()

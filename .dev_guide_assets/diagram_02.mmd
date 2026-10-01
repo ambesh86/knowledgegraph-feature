@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Client
+    participant Router as facts_router.py
+    participant Orchestrator as FoundationalFactsOrchestrator
+    participant Provider as FoundationalNHopProvider
+    participant Adapter as Neo4jFoundationalNHopAdapter
+    participant DB as Neo4j
+    participant GraphMapper as GraphMapper
+    participant FactsMapper as FactsMapper
+
+    Client->>Router: GET /graph/facts/start/abc123
+    Router->>Router: Validate input (auth, params)
+    Router->>Orchestrator: find_facts_by_start_id("abc123", n_hop=1, page=1)
+
+    Orchestrator->>Provider: find_subgraph_by_start_id("abc123", n_hop=1)
+    Provider->>Adapter: query(start_id, n_hop, page, page_size)
+    Adapter->>DB: MATCH (start {node_id: $id})-[r]-{0,1}(end) RETURN ...
+    DB-->>Adapter: DataFrame of rows
+
+    Adapter-->>Provider: DataFrame
+    Provider->>GraphMapper: map(DataFrame)
+    GraphMapper-->>Provider: Graph(nodes, relationships)
+    Provider-->>Orchestrator: Graph
+
+    Orchestrator->>FactsMapper: map(Graph)
+    Note over FactsMapper: Converts each<br>node-rel-node triple<br>into English sentence
+    FactsMapper-->>Orchestrator: set["Drug X has indication Disease Y", ...]
+
+    Orchestrator-->>Router: set[str]
+    Router-->>Client: {"count": 5, "results": ["Drug X has...", ...]}

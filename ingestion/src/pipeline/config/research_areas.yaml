@@ -1,0 +1,115 @@
+# Research areas swept by the nightly ingestion run.
+#
+# Derived from Eugene's ACTUAL seeded portfolio (bin/seed/csl_behring_assets.cypher),
+# not from generic therapeutic categories. Eugene exists for CSL Behring competitive
+# intelligence, so the sweep tracks CSL's franchises and the competitors filed
+# against them — Afstyla/Idelvion/Hemgenix, Berinert/Haegarda/Andembry,
+# Hizentra/Privigen, Zemaira, CSL112 — plus BioMarin, Novo Nordisk, Pfizer,
+# KalVista, BioCryst and Pharvaris.
+#
+# Declared in advance on purpose: the pipeline does not decide what to look for,
+# and the list is auditable. Adding an area is a config edit, not a code change.
+
+defaults:
+  recency_days: 365
+  max_papers_per_area: 12
+  max_trials_per_area: 200
+  require_open_access: false
+
+areas:
+  # ── CSL's largest franchise ────────────────────────────────────────────────
+  - id: hemophilia
+    label: Hemophilia A & B — factor and non-factor therapy
+    enabled: true
+    queries:
+      literature: >-
+        ("hemophilia A" OR "hemophilia B" OR "factor VIII" OR "factor IX") AND
+        (efanesoctocog OR emicizumab OR "gene therapy" OR etranacogene OR
+        valoctocogene OR concizumab OR marstacimab OR fitusiran OR prophylaxis)
+      trials_condition: hemophilia A OR hemophilia B OR factor VIII deficiency
+      trials_intervention: >-
+        factor VIII OR factor IX OR emicizumab OR etranacogene OR concizumab OR
+        marstacimab OR fitusiran
+    keywords: [hemophilia, factor viii, factor ix, afstyla, idelvion, hemgenix,
+               emicizumab, gene therapy, inhibitor]
+
+  # ── Andembry/garadacimab is CSL's newest launch; heavily contested ─────────
+  - id: hereditary_angioedema
+    label: Hereditary angioedema — C1-INH and kallikrein inhibition
+    enabled: true
+    queries:
+      literature: >-
+        ("hereditary angioedema" OR "C1 esterase inhibitor" OR "plasma kallikrein")
+        AND (garadacimab OR berotralstat OR sebetralstat OR lanadelumab OR
+        deucrictibant OR prophylaxis OR "on-demand")
+      trials_condition: hereditary angioedema OR C1 inhibitor deficiency
+      trials_intervention: >-
+        garadacimab OR berotralstat OR sebetralstat OR lanadelumab OR C1 esterase inhibitor
+    keywords: [hereditary angioedema, hae, c1 inhibitor, kallikrein, garadacimab,
+               berinert, haegarda, andembry, orladeyo]
+
+  # ── Immunoglobulin franchise: Hizentra / Privigen ─────────────────────────
+  - id: immunoglobulin
+    label: Immunoglobulin therapy — PID, CIDP, hypogammaglobulinemia
+    enabled: true
+    queries:
+      literature: >-
+        ("primary immunodeficiency" OR CIDP OR "chronic inflammatory demyelinating"
+        OR hypogammaglobulinemia) AND (immunoglobulin OR "subcutaneous Ig" OR
+        "intravenous immunoglobulin" OR efgartigimod OR rozanolixizumab)
+      trials_condition: >-
+        primary immunodeficiency OR CIDP OR chronic inflammatory demyelinating polyneuropathy
+      trials_intervention: immunoglobulin OR subcutaneous immunoglobulin OR efgartigimod
+    keywords: [immunoglobulin, cidp, primary immunodeficiency, hizentra, privigen,
+               plasma-derived, ivig, scig]
+
+  # ── Alpha-1: Zemaira franchise ────────────────────────────────────────────
+  - id: alpha1_antitrypsin
+    label: Alpha-1 antitrypsin deficiency
+    enabled: true
+    queries:
+      literature: >-
+        ("alpha-1 antitrypsin" OR AATD OR SERPINA1) AND (augmentation OR
+        emphysema OR "liver disease" OR fazirsiran OR "gene therapy")
+      trials_condition: alpha-1 antitrypsin deficiency
+      trials_intervention: alpha-1 antitrypsin OR augmentation therapy OR fazirsiran
+    keywords: [alpha-1 antitrypsin, aatd, serpina1, emphysema, augmentation]
+
+  # ── CSL112 / AEGIS-II — cardiovascular ApoA-I ─────────────────────────────
+  - id: cardiovascular_apoa1
+    label: ApoA-I infusion & acute coronary syndrome
+    enabled: true
+    queries:
+      literature: >-
+        ("apolipoprotein A-I" OR "CSL112" OR "reconstituted HDL") AND
+        ("acute coronary syndrome" OR "myocardial infarction" OR "cholesterol efflux")
+      trials_condition: acute coronary syndrome OR myocardial infarction
+      trials_intervention: apolipoprotein A-I OR CSL112
+    keywords: [apoa1, csl112, acute coronary syndrome, hdl, cholesterol efflux]
+
+  # ── Kcentra: bleeding reversal ────────────────────────────────────────────
+  - id: bleeding_reversal
+    label: Bleeding reversal & prothrombin complex concentrate
+    enabled: false        # off by default — narrower franchise, keeps sweeps focused
+    queries:
+      literature: >-
+        ("prothrombin complex concentrate" OR "vitamin K antagonist reversal" OR
+        andexanet) AND (bleeding OR hemorrhage OR anticoagulation)
+      trials_condition: anticoagulant reversal OR major bleeding
+      trials_intervention: prothrombin complex concentrate OR andexanet alfa
+    keywords: [kcentra, pcc, reversal, anticoagulation, bleeding]
+
+sources:
+  europepmc:
+    enabled: true
+    # Europe PMC rather than PubMed for PDFs: PubMed indexes abstracts and most
+    # records have no downloadable PDF. Measured on a real query, 8/8 Europe PMC
+    # results carried PDF links and 6/8 were open access.
+    role: papers
+  clinicaltrials:
+    enabled: true
+    role: trials
+  pubmed:
+    enabled: true
+    # Discovery/metadata only; PDF resolution routes via Europe PMC.
+    role: discovery

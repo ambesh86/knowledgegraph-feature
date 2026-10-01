@@ -1,0 +1,42 @@
+%% Figure 4 — Collaboration diagram: which object asks whom, with message ordering
+flowchart LR
+    SCH["Scheduler"]
+    ORC["Orchestrator"]
+    STORE["Store<br/>repository"]
+    COL["Collector x4"]
+    ENR["Enricher"]
+    DED["Deduper"]
+    SCO["Scorer<br/>PURE"]
+    RAT["Rationale<br/>+ numeric fence"]
+    CSC["CompanyScorer"]
+    IDX["SignalIndex"]
+    API["FastAPI"]
+    S3[("S3")]
+    EXT["External APIs"]
+
+    SCH -->|"1: run(trigger)"| ORC
+    ORC -->|"2: load_config()"| STORE
+    ORC -->|"3: collect()"| COL
+    COL -->|"3.1: HTTP"| EXT
+    COL -->|"3.2: stage_raw()"| STORE
+    ORC -->|"4: enrich()"| ENR
+    ENR -->|"5: is_relevant()"| ORC
+    ORC -->|"6: dedupe + merge"| DED
+    ORC -->|"7: score()"| SCO
+    SCO -->|"8: ScoreResult"| ORC
+    ORC -->|"9: build()"| RAT
+    RAT -->|"10: prose or template"| ORC
+    ORC -->|"11: baseline_scores()"| STORE
+    ORC -->|"12: aggregate()"| CSC
+    CSC -->|"13: CompanyScore[]"| ORC
+    ORC -->|"14: publish_area()"| STORE
+    STORE -->|"15: PUT"| S3
+    ORC -->|"16: refresh()"| IDX
+    S3 -->|"17: index.json"| IDX
+    API -->|"18: query_signals()"| IDX
+    ORC -->|"19: ScanRun"| SCH
+
+    classDef pure fill:#E8F5E9,stroke:#1B5E20,stroke-width:2px
+    classDef store fill:#E2F3F1,stroke:#0B7A75,stroke-width:2px
+    class SCO pure
+    class S3,STORE store

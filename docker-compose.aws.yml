@@ -1,0 +1,174 @@
+#C:\Users\Ambesh.Kumar\Downloads\CSL-Bio-informatics\knowledgegraph-feature-nextgen
+# =============================================================================
+# Eugene — AWS deployment (re-uses existing ALB-hosted Core API + MCP)
+# =============================================================================
+# This compose file deploys ONLY the agent + 2 chat UIs. It points them at
+# the already-deployed Core API and MCP server reachable via the internal
+# AWS ALB. Neo4j, eugene_ws (Core API) and eugene_mcp are NOT included —
+# they're on AWS already.
+#
+# IMPORTANT — networking
+# ----------------------
+# The target ALB hostname is `internal-...elb.amazonaws.com` (private ALB).
+# That means you MUST run this compose on a host INSIDE the same VPC, e.g.:
+#   - An EC2 instance in a private/public subnet of the VPC
+#   - ECS Fargate task in the VPC
+#   - Cloud9 / SSM Session Manager inside the VPC
+#
+# From a laptop it will fail unless you have a VPN/Direct-Connect/bastion
+# tunnel into the VPC.
+#
+# QUICK START (on EC2 inside the VPC)
+# ----------------------------------------------------------------------------
+#   1. Create eugene-aws.env from the template at the bottom of this file and
+#      fill in the two secrets:
+#          EUGENE_CLIENT_SECRET=<jwt-signing-secret>
+#          AWS_REGION=us-east-1
+#          (Bedrock credentials are provided by the EC2/ECS IAM role.)
+#
+#   2. Authenticate Docker to your registry. Examples:
+#        ECR:
+#          aws ecr get-login-password --region us-east-1 | \
+#            docker login --username AWS --password-stdin \
+#            <acct>.dkr.ecr.us-east-1.amazonaws.com
+#        GHCR:
+#          echo <PAT> | docker login ghcr.io -u <user> --password-stdin
+#
+#   3. Pull and bring up:
+#        docker compose -f docker-compose.aws.yml --env-file eugene-aws.env pull
+#        docker compose -f docker-compose.aws.yml --env-file eugene-aws.env up -d
+#
+#   4. UIs:
+#        Streamlit chat   http://<EC2-private-IP>:18501
+#        Next.js chat     http://<EC2-private-IP>:18502
+#
+# IMAGE OVERRIDES
+# ----------------------------------------------------------------------------
+#   REGISTRY        default ghcr.io
+#   IMAGE_OWNER     default aisemanticexpert
+#   IMAGE_TAG       default latest   (pin to sha-XXXXX for prod)
+#
+# To point UIs at the ALB-hosted agent (skip running your own agent),
+# set USE_REMOTE_AGENT=true in eugene-aws.env and comment out the
+# `eugene_agent_ws` service block.
+# =============================================================================
+
+x-eugene-image: &image-defaults
+  pull_policy: always
+  restart: unless-stopped
+
+services:
+
+  # --------------------------------------------------------------------------
+  # AGENT TIER — Strands + FastAPI, talks to ALB-hosted MCP
+  # --------------------------------------------------------------------------
+  eugene_agent_ws:
+    <<: *image-defaults
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-aisemanticexpert}/eugene-agent-ws:${IMAGE_TAG:-latest}
+    container_name: eugene-agent-ws
+    ports:
+      - "18001:8000"
+    environment:
+      # ---- runtime ----
+      ENVIRONMENT: "production"
+
+      # ---- LLM ----
+      LLM_PROVIDER: "${LLM_PROVIDER:-bedrock}"
+      BEDROCK_MODEL_ID: "${BEDROCK_MODEL_ID:-amazon.nova-lite-v1:0}"
+      AWS_REGION: "${AWS_REGION:-us-east-1}"
+      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION:-${AWS_REGION:-us-east-1}}"
+      LLM_FALLBACK_PROVIDER: "${LLM_FALLBACK_PROVIDER:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_MODEL_ID: "${OPENAI_MODEL_ID:-gpt-4.1-mini}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      ANTHROPIC_MODEL_ID: "${ANTHROPIC_MODEL_ID:-claude-sonnet-4-20250514}"
+
+      # ---- Eugene identity (constants) ----
+      EUGENE_TENANT_ID: "f8645748-68c6-4eec-bd61-c71341a6ed7d"
+      EUGENE_CLIENT_ID: "ff58ded5-c309-4cc8-ae6a-3b7157b83879"
+      EUGENE_ISSUER: "https://eugene.ai.cslg1.cslg.net/f8645748-68c6-4eec-bd61-c71341a6ed7d"
+      EUGENE_AUDIENCE: "api://eugene/ff58ded5-c309-4cc8-ae6a-3b7157b83879"
+      EUGENE_AGENT_ALLOWLIST: "Damian.Knopp@cslbehring.com|Sterling.Foster@cslbehring.com|Paul.Disney@cslbehring.com|Sandeep.Bangar@cslbehring.com|Robert.Gill@cslbehring.com|Shantanu.Bedajna@cslbehring.com|Sushen.Joshi@cslbehring.com|rajesh.gupta@cslbehring.com"
+
+      # ---- shared signing secret (from eugene-aws.env) ----
+      EUGENE_CLIENT_SECRET: "${EUGENE_CLIENT_SECRET:?EUGENE_CLIENT_SECRET must be set in eugene-aws.env}"
+
+      # ---- AWS-hosted backends ----
+      EUGENE_API_BASE: "https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com"
+      EUGENE_MCP_SERVER_URL: "https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com:8443/mcp"
+
+      # ---- agent hard caps (matches Stage 1 hardening) ----
+      EUGENE_AGENT_MAX_ITERATIONS: "20"
+      EUGENE_AGENT_STREAM_TIMEOUT_S: "180"
+      EUGENE_MAX_TOOL_CALLS: "25"
+      EUGENE_MCP_VERIFY_SSL: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks: [eugene-net]
+
+  # --------------------------------------------------------------------------
+  # FRONTEND (legacy) — Streamlit, talks to LOCAL agent by default
+  # --------------------------------------------------------------------------
+  eugene_agent_ui:
+    <<: *image-defaults
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-aisemanticexpert}/eugene-agent-ui:${IMAGE_TAG:-latest}
+    container_name: eugene-agent-ui
+    ports:
+      - "18501:8501"
+    environment:
+      # Default: hit the local agent on the compose network.
+      # To bypass the local agent and use the ALB's existing agent,
+      # set USE_REMOTE_AGENT=true in eugene-aws.env.
+      EUGENE_AGENT_API_URL: "${USE_REMOTE_AGENT:+https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com/agent/api/query/stream}"
+    depends_on:
+      eugene_agent_ws:
+        condition: service_healthy
+    networks: [eugene-net]
+
+  # --------------------------------------------------------------------------
+  # FRONTEND (v2) — Next.js, talks to LOCAL agent + ALB Core API
+  # --------------------------------------------------------------------------
+  eugene_agent_ui_next:
+    <<: *image-defaults
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-aisemanticexpert}/eugene-agent-ui-next:${IMAGE_TAG:-latest}
+    container_name: eugene-agent-ui-next
+    ports:
+      - "18502:18502"
+    environment:
+      NODE_ENV: "production"
+      # Core API: always points at the ALB (it's the canonical data API)
+      EUGENE_CORE_API_URL: "https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com"
+      # Agent API: local agent in this compose, OR the ALB-hosted one
+      EUGENE_AGENT_API_URL: "${USE_REMOTE_AGENT:+https://internal-eugene-search-alb-616664632.us-east-1.elb.amazonaws.com/agent/api}"
+    depends_on:
+      eugene_agent_ws:
+        condition: service_healthy
+    networks: [eugene-net]
+
+networks:
+  eugene-net:
+    driver: bridge
+
+# =============================================================================
+# eugene-aws.env  — TEMPLATE  (create this file next to docker-compose.aws.yml)
+# =============================================================================
+# # --- required ---
+# EUGENE_CLIENT_SECRET=<the JWT signing secret shared with the ALB services>
+# AWS_REGION=us-east-1
+# Attach an IAM role granting Bedrock model invocation to the host/task.
+#
+# # --- optional ---
+# # LLM_PROVIDER=bedrock                         # default: bedrock
+# # BEDROCK_MODEL_ID=amazon.nova-lite-v1:0       # default
+# # LLM_FALLBACK_PROVIDER=openai                # opt-in; also set OPENAI_API_KEY
+# # OPENAI_API_KEY=sk-...
+# # ANTHROPIC_API_KEY=sk-ant-...
+# # USE_REMOTE_AGENT=true        # UIs hit ALB agent instead of local agent
+# # REGISTRY=ghcr.io             # or <acct>.dkr.ecr.us-east-1.amazonaws.com
+# # IMAGE_OWNER=aisemanticexpert # or your ECR namespace
+# # IMAGE_TAG=latest             # pin to sha-XXXXX for prod
+# =============================================================================

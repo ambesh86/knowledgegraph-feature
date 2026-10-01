@@ -1,0 +1,12 @@
+[
+  {
+    "entity_name": "CYBB locus",
+    "entity_type": "Genomic Locus",
+    "entity_description": "The CYBB locus is a specific location on the X chromosome that encodes the gp91phox protein, which is part of the NADPH oxidase complex. It is often targeted in gene editing studies."
+  },
+  {
+    "entity_name": "MAGT1 locus",
+    "entity_type": "Genomic Locus",
+    "entity_description": "The MAGT1 locus is a specific location on the X chromosome that encodes the magnesium transporter 1 protein. It is another target for gene editing studies."
+  }
+]

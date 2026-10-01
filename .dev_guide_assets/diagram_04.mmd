@@ -1,0 +1,31 @@
+graph TB
+    subgraph "eugene_ws.py (FastAPI App)"
+        subgraph "Auth & System"
+            A1["auth_router<br>/login, /auth/whoami, /auth/callback"]
+            A2["root_router → /"]
+            A3["health_router → /health"]
+            A4["release_notes_router → /release-notes"]
+            A5["database_stats_router → /stats"]
+        end
+
+        subgraph "Foundation Domain (main)"
+            F1["count_router → /count/{label}"]
+            F2["label_router → /labels/{label}"]
+            F3["node_id_lookup_router → /node/find/{value}"]
+            F4["node_details_router → /node/details"]
+            F5["n_hop_router → /graph/relationship/start/{id}"]
+            F6["search_path_router → /graph/path/start/{id}/end/{id}"]
+            F7["facet_router → /facets"]
+            F8["similarity_router → /similarity/{label}"]
+            F9["facts_router → /graph/facts/start/{id}"]
+        end
+
+        subgraph "Specialized Domains"
+            D1["drug_alias_search_router → /drugs/aliases/{name}"]
+            P1["patent_search_router → /patents/drugs"]
+            P2["patent_count_router → /patents/count"]
+            PB1["pubmed_search_router → /pubmed/drugs"]
+            PB2["pubmed_count_router → /pubmed/count"]
+            O1["organization_search_router<br>/organizations/{name}<br>/organizations/assets/{id}"]
+        end
+    end

@@ -1,0 +1,34 @@
+# Dev, QA and Main MRs are today different although they are similar, the reason is for future enhancement plans.
+workflow:
+  rules:
+    - when: always
+  auto_cancel:
+    on_new_commit: interruptible
+
+variables:
+  DEPLOYMENT_ENVIRONMENT: prod
+
+stages:
+  - scan
+
+# Run Checkov security scan on synthesized templates
+checkov-scan:
+  variables:
+    GIT_STRATEGY: none
+  stage: scan
+  script:
+    - cd ${TF_ROOT}
+    - python3 -m venv .venv
+    - source .venv/bin/activate
+    - pip install checkov
+    - echo "Running Checkov security scan on CDK-generated CloudFormation templates"
+    - checkov -d ./ --repo-id ${CI_PROJECT_PATH} --branch ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}  --output cli --output junitxml --output-file-path console,checkov-report.xml --hard-fail-on HIGH,CRITICAL --quiet
+    - cd -
+  artifacts:
+    reports:
+      junit: checkov-report.xml
+    paths:
+      - checkov-report.xml
+    expire_in: 1 week
+  allow_failure: false # Make pipeline fail if Checkov finds critical issues
+

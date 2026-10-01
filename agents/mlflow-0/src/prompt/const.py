@@ -1,0 +1,3 @@
+ORGANIZATION_RESOLUTION_PROMPT_NAME = "organization_resolution_prompt"
+ORGANIZATION_VERIFICATION_PROMPT_NAME = "organization_verification_prompt"
+ON_TOPIC_PROMPT_NAME = "on_topic_prompt"

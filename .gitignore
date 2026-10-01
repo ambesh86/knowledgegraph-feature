@@ -1,0 +1,114 @@
+# Local .terraform directories
+.terraform/
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files, which are likely to contain sensitive data, such as
+# password, private keys, and other secrets. These should not be part of version
+# control as they are data points which are potentially sensitive and subject
+# to change depending on the environment.
+*.tfvars
+!*.tfvars.example
+*.tfvars.json
+
+# Ignore override files as they are usually used to override resources locally and so
+# are not checked in
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore transient lock info files created by terraform apply
+.terraform.tfstate.lock.info
+
+# Include override files you do wish to add to version control using negated pattern
+# !example_override.tf
+
+# Saved terraform plan files
+tfplan
+*.tfplan
+
+# Local cypher dumps from bin/dump_aws_neo4j_to_cypher.py
+dumps/*.cypher
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+**/.DS_Store
+
+
+__pycache__/**
+
+
+.env
+docker.env
+*.env
+
+.vscode/*
+**/.DS_Store
+.DS_Store
+
+**/resources/data/*
+**/output/*
+
+.coverage
+lcov.info
+.pytest_cache/*
+**/__pycache__/*
+
+.db/*
+
+kuzu
+
+tmp
+
+**/.terraform/*
+**/**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/tfplan.out
+**/*tfplan.out
+
+venv_*
+
+# local jython cache
+.jython_cache/
+
+# Large external datasets (PrimeKG CSVs, PubMed PDFs, ~1GB; files >100MB exceed
+# GitHub limits). Sourced from S3 via src/s3-data-downloader.py, not tracked.
+knowledge-graph-external-data/
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+
+# eugene-scout local dev virtualenv
+agents/eugene-scout/.venv/
+
+# Generated import data (ct.gov CSV/JSON extracts, ~47MB) — regenerate with bin/ctgov
+dumps/
+##new intry
+# Python Virtual Environments
+.venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE Settings
+.idea/
+
+# Streamlit
+.streamlit/secrets.toml

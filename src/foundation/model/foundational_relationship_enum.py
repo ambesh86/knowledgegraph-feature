@@ -1,0 +1,32 @@
+from enum import Enum
+
+
+class FoundationalRelationshipEnum(Enum):
+    OFF_LABEL_USE = 1, "OFF-LABEL USE".lower()
+    ANATOMY_PROTEIN_ABSENT = 2, "ANATOMY_PROTEIN_ABSENT".lower()
+    ANATOMY_PROTEIN_PRESENT = 3, "ANATOMY_PROTEIN_PRESENT".lower()
+    BIOPROCESS_BIOPROCESS = 4, "BIOPROCESS_BIOPROCESS".lower()
+    CELLCOMP_CELLCOMP = 5, "CELLCOMP_CELLCOMP".lower()
+    CONTRAINDICATION = 6, "CONTRAINDICATION".lower()
+    DISEASE_DISEASE = 7, "DISEASE_DISEASE".lower()
+    DISEASE_PHENOTYPE_NEGATIVE = 8, "DISEASE_PHENOTYPE_NEGATIVE".lower()
+    DISEASE_PHENOTYPE_POSITIVE = 9, "DISEASE_PHENOTYPE_POSITIVE".lower()
+    DISEASE_PROTEIN = 10, "DISEASE_PROTEIN".lower()
+    DRUG_DRUG = 11, "DRUG_DRUG".lower()
+    DRUG_EFFECT = 12, "DRUG_EFFECT".lower()
+    DRUG_PROTEIN = 13, "DRUG_PROTEIN".lower()
+    EXPOSURE_DISEASE = 14, "EXPOSURE_DISEASE".lower()
+    INDICATION = 15, "INDICATION".lower()
+    MOLFUNC_MOLFUNC = 16, "MOLFUNC_MOLFUNC".lower()
+    PATHWAY_PATHWAY = 17, "PATHWAY_PATHWAY".lower()
+    PATHWAY_PROTEIN = 18, "PATHWAY_PROTEIN".lower()
+    PROTEIN_PROTEIN = 19, "PROTEIN_PROTEIN".lower()
+    HAS_DRUG_ALIAS = 20, "HAS_DRUG_ALIAS".lower()
+    DISCLOSED_IN = 21, "disclosed_in".lower()
+    SUPPORTS_PATENT_APPLICATION = 22, "supports_patent_application".lower()
+    PATENT_APP_TARGET = 23, "patent_app_target".lower()
+    FEATURED_IN = 24, "featured_in".lower()
+    ANALYZED_IN = 25, "analyzed_in".lower()
+    EVALUATED_IN = 26, "evaluated_in".lower()
+
+    HAS_PUBLICATION = 200, "HAS_PUBLICATION".lower()

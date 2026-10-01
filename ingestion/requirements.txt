@@ -1,0 +1,27 @@
+# Core
+pydantic==2.10.4
+PyYAML==6.0.2
+requests==2.32.3
+boto3==1.35.92
+
+# Document extraction
+PyMuPDF==1.25.1
+doclayout-yolo==0.0.4
+huggingface-hub==0.27.0
+opencv-python-headless==4.10.0.84
+
+# Stores
+neo4j==5.28.2
+pymilvus==2.5.4
+milvus-lite==2.4.12
+sentence-transformers==3.3.1
+
+# Centrality (M4) — networkx implements all seven metrics
+networkx==3.4.2
+scipy==1.15.0
+
+# Scheduler + trigger endpoint
+apscheduler==3.11.0
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-json-logger==2.0.7

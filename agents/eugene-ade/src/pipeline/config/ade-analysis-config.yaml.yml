@@ -1,0 +1,204 @@
+# Document Domain Configuration
+# Document Evidence Architecture
+# ingestion -> ADE -> S3 + Neo4j + Milvus -> Fusion Retrieval
+
+database:
+  neo4j:
+    database: neo4j
+
+domains:
+
+  document:
+
+    status: working
+
+    document_sources:
+      enabled: true
+      supported_sources:
+        - europe_pmc
+        - pubmed
+        - pmc
+        - patents
+        - url
+
+    scheduler:
+      enabled: true
+      implementation: APScheduler
+      default_run_time: "01:00 UTC"
+      config_keys:
+        - INGESTION_HOUR
+        - INGESTION_MINUTE
+        - INGESTION_TZ
+
+    orchestrator:
+      file: orchestrator.py
+      functions:
+        - load_config
+        - discover_papers
+        - ade_ingest
+        - refresh_centrality
+        - run
+
+    ingestion:
+      service_file: service.py
+      endpoints:
+        - /ingest/run
+        - /ingest/dry-run
+        - /ingest/centrality
+
+    ade_service:
+      status: active
+      api_file: api.py
+      endpoints:
+        - /health
+        - /ade/ingest
+        - /ade/ingest/batch
+        - /ade/reindex
+        - /ade/documents/{doc_id}
+        - /ade/documents/{doc_id}/chunks
+        - /ade/documents/{doc_id}/markdown
+        - /ade/documents/{doc_id}/pdf
+        - /ade/evidence/{doc_id}/{chunk_id}.png
+        - /ade/page/{doc_id}/{page_no}.png
+
+    pdf_parser:
+      parser_file: parser.py
+      implementation: PyMuPDF
+      extracted_content:
+        - text_blocks
+        - tables
+        - images
+        - bounding_boxes
+        - markdown_spans
+        - grounding_metadata
+        - document_metadata
+        - content_hashes
+        - chunk_ids
+
+    layout_analysis:
+      enabled: true
+      implementation: DocLayout_YOLO
+      modules:
+        - layout.py
+        - detectors.py
+        - tables.py
+        - verify.py
+        - enrich.py
+        - render.py
+
+    pipeline:
+      implementation_file: pipeline.py
+      stages:
+        - fetch_pdf
+        - store_pdf
+        - parse_pdf
+        - detect_layout
+        - merge_layout
+        - table_expansion
+        - extraction_verification
+        - enrichment
+        - neo4j_indexing
+        - manifest_generation
+
+    storage:
+      type: s3
+      bucket_env: ADE_S3_BUCKET
+      artifact_types:
+        - source_pdf
+        - document_json
+        - parse_markdown
+        - chunks_json
+        - grounding_json
+        - evidence_png
+
+    document_graph:
+      backend: neo4j
+
+      node_labels:
+        - paper
+        - paper_chunk
+        - evidence_span
+
+      relationships:
+        - has_chunk
+        - mentions
+
+      search_indexes:
+        - paper_chunk_fulltext
+
+    vector_search:
+      enabled: true
+
+      backend: milvus
+
+      endpoints:
+        - /vector/health
+        - /vector/search/{query}
+        - /vector/fusion
+        - /vector/fusion/{query}
+
+      features:
+        - semantic_search
+        - fusion_search
+        - reranking
+        - evidence_retrieval
+
+    research_digest:
+      enabled: true
+      endpoint: /research/digest
+
+    external_sources:
+      - Europe_PMC
+      - PubMed
+      - PMC
+      - USPTO
+      - ClinicalTrialsGov
+
+    primary_files:
+      - orchestrator.py
+      - service.py
+      - api.py
+      - pipeline.py
+      - parser.py
+      - indexer.py
+      - fetch.py
+      - storage.py
+
+  legacy_graphrag:
+
+    status: legacy
+
+    orchestrator:
+      class: EugeneGraphSummaryOrchestrator
+
+    workflow:
+      - pdf_parsing
+      - llm_entity_extraction
+      - relationship_extraction
+      - neo4j_entity_linking
+      - graph_summarization
+      - community_analysis
+
+    key_modules:
+      - document_analyzer.py
+      - simple_document_analyzer.py
+      - summarization_dir_analyzer.py
+      - neo4j_graphrag_adapter.py
+      - neo4j_graphrag_linking_adapter.py
+
+common:
+
+  pagination:
+    default_page: 1
+    default_page_size: 100
+    max_page_size: 500
+
+  evidence:
+    chunk_identity:
+      algorithm: sha1
+
+    storage_backend: s3
+
+    search_backends:
+      - neo4j
+      - milvus

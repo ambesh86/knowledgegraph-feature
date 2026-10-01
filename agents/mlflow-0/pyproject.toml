@@ -1,0 +1,20 @@
+[project]
+name = "organization_mlflow_agent"
+version = "0.1.0"
+description = "using agents to resolve organizations"
+readme = "README.md"
+requires-python = ">=3.12.7"
+dependencies = [
+    "black>=26.1.0",
+    "langchain>=1.2.6",
+    "langchain-aws>=1.2.1",
+    "langchain-ollama>=1.0.1",
+    "langchain-openai>=1.1.7",
+    "mlflow>=3.8.1",
+    "openai>=2.15.0",
+    "strands-agents>=1.22.0",
+    "strands-agents-tools>=0.2.19",
+]
+
+[tool.black]
+	line-length = 88

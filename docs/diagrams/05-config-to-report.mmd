@@ -1,0 +1,34 @@
+%% Figure 4a — Configuration and scheduling: what the BD team controls
+flowchart LR
+    subgraph CONTROL["1. CONFIGURATION — no code change required"]
+        direction TB
+        YAML["research_areas.yaml<br/>therapeutic areas + queries<br/>owned by ingestion,<br/>read here, never redefined"]
+        UICFG["Settings › Scanning<br/>weights · thresholds · windows<br/>enabled sources · relevance gate"]
+        S3CFG[("S3 config/scan_config.json<br/>versioned — every scan records<br/>which version produced it")]
+        UICFG --> S3CFG
+    end
+
+    subgraph TRIGGER["2. SCHEDULING"]
+        direction TB
+        CRON["Daily 02:00 UTC<br/>after ingestion's 01:00, so it sees<br/>the night's newly indexed papers"]
+        MANUAL["Rescan button<br/>POST /scan · single-flight"]
+        WEEKLY["Weekly Monday 02:30<br/>briefing build"]
+    end
+
+    subgraph COLLECT["3. COLLECTION → STAGING"]
+        direction TB
+        FETCH["4 collectors, concurrent<br/>rate-limited · retried<br/>date-filtered locally"]
+        RAWZ[("S3 raw/dt=/run=/area=/source=<br/>records.jsonl.gz<br/>UNTOUCHED upstream payload")]
+        FETCH --> RAWZ
+    end
+
+    YAML --> CRON
+    S3CFG --> CRON
+    CRON --> FETCH
+    MANUAL --> FETCH
+    WEEKLY -.-> FETCH
+
+    classDef cfg fill:#FFF3E0,stroke:#B26A00,stroke-width:2px
+    classDef store fill:#E2F3F1,stroke:#0B7A75,stroke-width:2px
+    class YAML,UICFG,S3CFG cfg
+    class RAWZ store

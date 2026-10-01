@@ -1,0 +1,9 @@
+black>=25.12.0
+boto3>=1.42.26
+dotenv>=0.9.9
+fastapi>=0.128.0
+openai>=2.14.0
+pyjwt[crypto]>=2.10.1
+slowapi>=0.1.9
+strands-agents>=1.21.0
+strands-agents-tools>=0.2.19

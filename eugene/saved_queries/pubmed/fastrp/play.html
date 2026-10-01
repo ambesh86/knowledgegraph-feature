@@ -1,0 +1,329 @@
+<article class="guide">
+  <carousel class="deck container-fluid">
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>A Drug/Disease to Pubmed Article Link Prediction Guide</h3>
+        <p class="lead">
+          This guide will show how to run link prediction to suggest a disease or drug link to a pubmed article.
+        </p>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Project A Graph</h3>
+        <p class="lead">
+          Project a graph for the pubmed articles. Include drug, disease, gene_protein foundational nodes. Include
+          relationships
+          between nodes, including the `has_extraction` pubmed article relationship to the foundational graph nodes.
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <p>## TODO: consider adding `anatomy`, but first fix the `node_index` field in a few of the `anatomy` nodes.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.graph.project(
+  'pubmed_graph',
+  [
+    'disease',
+    'drug',
+    'gene_protein',
+    'pubmed_document'
+  ],
+  {
+    has_extraction: {orientation: 'UNDIRECTED', type:'*'},
+    disease_disease: {orientation: 'UNDIRECTED', type:'*'},
+    disease_protein: {orientation: 'UNDIRECTED', type:'*'},
+    drug_protein: {orientation: 'UNDIRECTED', type:'*'},
+    drug_drug: {orientation: 'UNDIRECTED', type:'*'},
+    drug_effect: {orientation: 'UNDIRECTED', type:'*'},
+    protein_protein: {orientation: 'UNDIRECTED', type:'*'},
+    indication: {orientation: 'UNDIRECTED', type:'*'},
+    contraindication: {orientation: 'UNDIRECTED', type:'*'}
+  },
+  {
+    nodeProperties: ['model2vec_embeddings', 'label_one_hot_encoding']
+  }
+)
+yield graphName AS graph, nodeProjection, nodeCount AS nodes, relationshipCount AS rels
+return graph, nodeProjection, nodes, rels;
+          </pre>
+          <figcaption>Project a pubmed graph</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Merge Graph and Sentence Embeddings</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Create embeddings using the
+          https://neo4j.com/docs/graph-data-science/current/machine-learning/node-embeddings/fastrp/[fast random
+          projection(fastrp)]
+          algorithm. The parameters used are an embedding dimension size, 256 is recommended for graphs with
+          10^5 nodes or more. We use dimension `512` to make room for the `model2vec_embeddings` created with sentence
+          transfomers. The `iterationWeights` are tuned to learn from closest neighbors first and then some 2nd hop
+          neighbors.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.fastRP.mutate(
+  'pubmed_graph',
+    {
+      embeddingDimension: 512,
+      mutateProperty: 'fastrp-embedding',
+      iterationWeights: [1.0, .10],
+      normalizationStrength: -0.5,
+      randomSeed: 75,
+      featureProperties: ['model2vec_embeddings'],
+      propertyRatio: .50
+    }
+  )
+  yield nodePropertiesWritten;
+          </pre>
+          <figcaption>Merge graph and sentence transformer embeddings</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Setup Link Prediction Pipeline</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          The pipeline will attempt to build models using logistic regression, random forest, or multilayer perceptron.
+          The model
+          with the best results will be used. Notice the training data is split between train and testing.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+// define the link prediction pipeline
+call gds.beta.pipeline.linkPrediction.create('pubmed-pipeline-1');
+
+// define embedding as a feature, can add other node properties
+call gds.beta.pipeline.linkPrediction.addFeature('pubmed-pipeline-1', 'hadamard', {
+  nodeProperties: [
+    'fastrp-embedding',
+    'model2vec_embeddings'
+  ]
+}) yield featureSteps;
+
+// configure test, training, validation data splits
+call gds.beta.pipeline.linkPrediction.configureSplit('pubmed-pipeline-1', {
+  testFraction: 0.17,
+  trainFraction: 0.59,
+  validationFolds: 3
+})
+yield splitConfig;
+
+// define model type, each model will be tried in the autotuning step
+call gds.beta.pipeline.linkPrediction.addLogisticRegression('pubmed-pipeline-1')
+yield parameterSpace;
+
+CALL gds.beta.pipeline.linkPrediction.addRandomForest('pubmed-pipeline-1', {numberOfDecisionTrees: 10 })
+yield parameterSpace;
+
+// note the alpha namespace
+call gds.alpha.pipeline.linkPrediction.addMLP('pubmed-pipeline-1',
+{hiddenLayerSizes: [4, 2], penalty: 0.5, patience: 2, classWeights: [0.55, 0.45], focusWeight: {range: [0.0, 0.1]}})
+yield parameterSpace;
+          </pre>
+          <figcaption>Create link prediction pipeline</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Train Disease to Article Model</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Train disease to article model
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+            // 
+call gds.beta.pipeline.linkPrediction.train('pubmed_graph', {
+  pipeline: 'pubmed-pipeline-1',
+  modelName: 'pubmed-disease-model',
+  metrics: ['AUCPR', 'OUT_OF_BAG_ERROR'],
+  sourceNodeLabel: 'pubmed_document',
+  targetRelationshipType: 'has_extraction',
+  targetNodeLabel: 'disease',
+  randomSeed: 75
+}) yield modelInfo, modelSelectionStats
+return
+  modelInfo.bestParameters AS winningModel,
+  modelInfo.metrics.AUCPR.train.avg AS avgTrainScore,
+  modelInfo.metrics.AUCPR.outerTrain AS outerTrainScore,
+  modelInfo.metrics.AUCPR.test AS testScore,
+  [cand IN modelSelectionStats.modelCandidates | cand.metrics.AUCPR.validation.avg] AS validationScores;
+          </pre>
+          <figcaption>train model</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Train Drug to Article Model</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Train drug to article model
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+// 
+call gds.beta.pipeline.linkPrediction.train('pubmed_graph', {
+  pipeline: 'pubmed-pipeline-1',
+  modelName: 'pubmed-drug-model',
+  metrics: ['AUCPR', 'OUT_OF_BAG_ERROR'],
+  sourceNodeLabel: 'pubmed_document',
+  targetRelationshipType: 'has_extraction',
+  targetNodeLabel: 'drug',
+  randomSeed: 75
+}) yield modelInfo, modelSelectionStats
+return
+  modelInfo.bestParameters AS winningModel,
+  modelInfo.metrics.AUCPR.train.avg AS avgTrainScore,
+  modelInfo.metrics.AUCPR.outerTrain AS outerTrainScore,
+  modelInfo.metrics.AUCPR.test AS testScore,
+  [cand IN modelSelectionStats.modelCandidates | cand.metrics.AUCPR.validation.avg] AS validationScores;
+          </pre>
+          <figcaption>train model</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Predict Disease to Article</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Predict across all diseases to articles.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.beta.pipeline.linkPrediction.predict.stream('pubmed_graph', {
+  modelName: 'pubmed-disease-model',
+  topN: 1000,
+  threshold: 0.5
+})
+yield node1, node2, probability
+return probability, gds.util.asNode(node1).node_name as disease, gds.util.asNode(node2).title as article, gds.util.asNode(node2).pmcid as pmcid
+order by probability desc, disease, article;
+          </pre>
+          <figcaption>Predict disease to article</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Predict Drug to Article</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Predict across all drugs to articles.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.beta.pipeline.linkPrediction.predict.stream('pubmed_graph', {
+  modelName: 'pubmed-drug-model',
+  topN: 200,
+  threshold: 0.5
+})
+yield node1, node2, probability
+return probability, gds.util.asNode(node1).node_name AS drug, gds.util.asNode(node2).title AS article, gds.util.asNode(node2).pmcid as pmcid 
+order by probability desc, drug, article;
+          </pre>
+          <figcaption>Predict drug to article</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>K Nearest Neighbors (KNN)</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          K Nearest Neighbors
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+call gds.knn.write(
+  'pubmed_graph',
+  {
+    nodeProperties: ['fastrp-embedding'],
+    nodeLabels: ['pubmed_document'],
+    topK: 8,
+    sampleRate: 1.0,
+    deltaThreshold: 0.001,
+    similarityCutoff: .85,
+    randomSeed: 75,
+    concurrency: 1,
+    writeProperty: 'fastrp_score',
+    writeRelationshipType: 'similar_article'
+  }
+)
+yield similarityDistribution
+return similarityDistribution.mean as meanSimilarity;
+          </pre>
+          <figcaption>KNN</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Similar Articles</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          View similar articles
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+MATCH p=(d1:pubmed_document)-[r:similar_article]-(d2:pubmed_document)
+where r.fastrp_score > .5
+RETURN p;
+          </pre>
+          <figcaption>view similar articles</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Clean Up</h3>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Delete graph, models and pipeline.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+// delete article knn links
+MATCH (d1:pubmed_document)-[r:similar_article]-(d2:pubmed_document)
+DELETE r;
+
+// drop model
+call gds.model.drop('pubmed-disease-model')
+    yield modelName, modelType, modelInfo, loaded, stored, published;
+
+call gds.model.drop('pubmed-drug-model')
+    yield modelName, modelType, modelInfo, loaded, stored, published;
+
+// drop pipeline
+call gds.pipeline.drop('pubmed-pipeline-1');
+
+// drop graph
+call gds.graph.drop('pubmed_graph');
+          </pre>
+          <figcaption>Clean up</figcaption>
+        </figure>
+      </div>
+    </slide>
+  </carousel>
+</article>
+
+
+

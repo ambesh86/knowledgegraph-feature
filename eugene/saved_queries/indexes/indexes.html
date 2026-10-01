@@ -1,0 +1,115 @@
+<article class="guide">
+  <carousel class="deck container-fluid">
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>A Vector Embedding Index Search Guide</h3>
+        <p class="lead">
+          This guide will show how run a search against a vector embedding index.
+        </p>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Create an index</h3>
+        <p class="lead">
+          Create a vector embedding index if it does not already exist. In this example we will create an index for the sentence embedding stored in the `model2vec_embeddings` field.
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <p>`model2vec_embeddings`
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+// embeddings indexes
+CREATE VECTOR INDEX pubmed_document_model2vec_embeddings_index IF NOT EXISTS
+    FOR (n:pubmed_document)
+    ON n.model2vec_embeddings
+    OPTIONS { indexConfig: {
+        `vector.dimensions`: 256,
+        `vector.similarity_function`: 'cosine'
+    }
+};
+
+CREATE VECTOR INDEX drug_model2vec_embeddings_index IF NOT EXISTS
+    FOR (n:drug)
+    ON n.model2vec_embeddings
+    OPTIONS { indexConfig: {
+        `vector.dimensions`: 256,
+        `vector.similarity_function`: 'cosine'
+    }
+};
+
+CREATE VECTOR INDEX disease_model2vec_embeddings_index IF NOT EXISTS
+    FOR (n:disease)
+    ON n.model2vec_embeddings
+    OPTIONS { indexConfig: {
+        `vector.dimensions`: 256,
+        `vector.similarity_function`: 'cosine'
+    }
+};
+
+CREATE VECTOR INDEX gene_protein_model2vec_embeddings_index IF NOT EXISTS
+    FOR (n:gene_protein)
+    ON n.model2vec_embeddings
+    OPTIONS { indexConfig: {
+        `vector.dimensions`: 256,
+        `vector.similarity_function`: 'cosine'
+    }
+};
+
+CREATE VECTOR INDEX anatomy_model2vec_embeddings_index IF NOT EXISTS
+    FOR (n:anatomy)
+    ON n.model2vec_embeddings
+    OPTIONS { indexConfig: {
+        `vector.dimensions`: 256,
+        `vector.similarity_function`: 'cosine'
+    }
+};
+          </pre>
+          <figcaption>Create vector index is not exists</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Show vector indexes</h3>
+        <p class="lead">
+          Create a vector embedding index if it does not already exist. In this example we will create an index for the sentence embedding stored in the `model2vec_embeddings` field.
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          Show vector indexes if not exists. Look for `online` status and not `populating`
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+SHOW VECTOR INDEXES;
+          </pre>
+          <figcaption>Show Vector Indexes</figcaption>
+        </figure>
+      </div>
+    </slide>
+    <slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Query Similar Embeddings</h3>
+        <p class="lead">
+          Query similar embeddings with the `queryNodes` command. The `model2vec_embeddings` is a merged embedding generated from the article `title` and `keywords` fields.
+        </p>
+      </div>
+      <div class="col-sm-9">
+        <p>
+          In this example we query for a "graft verse host disease" article.
+        </p>
+        <figure>
+          <pre class="pre-scrollable code runnable">
+MATCH (n:pubmed_document { pmcid: '11759061' })
+CALL db.index.vector.queryNodes('pubmed_document_model2vec_embeddings_index', 25, n.model2vec_embeddings)
+YIELD node AS article, score
+RETURN score, article.pmcid AS pmcid, article.keywords as keywords, article.title AS title;
+          </pre>
+          <figcaption>graft-vs-host-disease</figcaption>
+        </figure>
+      </div>
+    </slide>
+  </carousel>
+</article>

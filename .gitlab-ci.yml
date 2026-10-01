@@ -1,0 +1,99 @@
+default:
+  tags:
+    - shell
+
+workflow:
+  auto_cancel:
+    on_new_commit: conservative
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+      variables:
+        DEPLOYMENT_ENVIRONMENT: prod
+    - if: '$CI_COMMIT_BRANCH == "qa"'
+      when: always
+      variables:
+        DEPLOYMENT_ENVIRONMENT: qa
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+
+stages:
+  - echo
+  - scan
+  - docker
+  - terraform-ec2
+  - apply-ec2
+  - terraform-services
+  - apply-services
+
+debug:
+  stage: echo
+  script:
+    - echo "commit branch ${CI_COMMIT_BRANCH}"
+    - echo "merge source branch ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}"
+    - echo "merge target branch ${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+
+include:
+  # feature branch workflow
+  - local: .gitlab/ci/docker.yml
+    rules:
+      - if: $CI_COMMIT_BRANCH =~ /^feature\/.*/
+        when: always
+  # push on main, qa branch workflow
+  - local: .gitlab/ci/docker.yml
+    rules:
+      - if: $CI_COMMIT_BRANCH == "main"
+      - if: $CI_COMMIT_BRANCH == "qa"
+        when: always
+  # terraform on main, qa branch workflow
+  - local: .gitlab/ci/terraform-ec2.yml
+    rules:
+      - if: $CI_COMMIT_BRANCH == "main"
+        when: always
+      - if: $CI_COMMIT_BRANCH == "qa"
+        when: always
+  - local: .gitlab/ci/terraform-services.yml
+    rules:
+      - if: $CI_COMMIT_BRANCH == "main"
+        when: always
+      - if: $CI_COMMIT_BRANCH == "qa"
+        when: always
+  # merge request from feature branch to qa
+  - local: .gitlab/ci/mr-qa.yml
+    rules:
+      - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "qa"
+        when: always
+  # merge request from qa to main
+  - local: .gitlab/ci/mr-main.yml
+    rules:
+      - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+        when: always
+  # todo: setup security scanners
+  # - template: Jobs/SAST.gitlab-ci.yml
+  #   rules:
+  #     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  #       when: always
+  # - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  #   rules:
+  #     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  #       when: always
+
+variables:
+  TF_ROOT: ${CI_PROJECT_DIR}/infrastructure/environments/
+  AWS_ROLE_ARN: "arn:aws:iam::010928221940:role/csl-gitlab-ci-cd-scop-all-branches"
+
+.aws-role-assumption:
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://gitlab.com
+  before_script:
+    - >
+      aws_sts_output=$(aws sts assume-role-with-web-identity
+      --role-arn ${AWS_ROLE_ARN}
+      --role-session-name "GitLabRunner-${CI_PROJECT_ID}-${CI_PIPELINE_ID}"
+      --web-identity-token ${GITLAB_OIDC_TOKEN}
+      --duration-seconds 3600
+      --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]'
+      --output text)
+    - export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" $aws_sts_output)
+    - aws sts get-caller-identity

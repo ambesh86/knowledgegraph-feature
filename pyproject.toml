@@ -1,0 +1,11 @@
+[project]
+name = "graphrag"
+version = "0.1.0"
+description = "graphrag ingest and query scripts"
+readme = "README.md"
+requires-python = ">=3.12.7"
+dependencies = [
+]
+
+[tool.black]
+	line-length = 88
